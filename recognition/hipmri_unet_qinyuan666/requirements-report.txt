@@ -1,0 +1,3 @@
+-r requirements.txt
+reportlab==4.4.4
+pypdf==6.1.1
