@@ -7,6 +7,7 @@ The displayed slices are examples, not a complete patient-level evaluation.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 from pathlib import Path
 
@@ -40,10 +41,20 @@ def _validate_checkpoint(checkpoint: dict, synthetic: bool) -> tuple[dict, int]:
         raise ValueError("Checkpoint config is missing required model/data fields")
     if not isinstance(config["synthetic"], bool) or config["synthetic"] != synthetic:
         raise ValueError("Checkpoint data mode and --synthetic must match exactly")
-    if "model_state" not in checkpoint or not isinstance(checkpoint.get("epoch"), int):
-        raise ValueError("Checkpoint needs model_state and integer epoch")
+    if (not isinstance(checkpoint.get("model_state"), dict)
+            or not checkpoint["model_state"]):
+        raise ValueError("Checkpoint needs a nonempty model_state dictionary")
+    epoch = checkpoint.get("epoch")
+    if isinstance(epoch, bool) or not isinstance(epoch, int) or epoch < 1:
+        raise ValueError("Checkpoint epoch must be a positive integer")
+    if config["model"] not in ("unet", "improved_unet"):
+        raise ValueError("Checkpoint model must be unet or improved_unet")
+    if not isinstance(config["label_values"], (list, tuple)):
+        raise ValueError("Checkpoint label_values must be a sequence of raw integer labels")
     labels = validate_label_values(config["label_values"])
-    if len(labels) != config["num_classes"]:
+    if (isinstance(config["num_classes"], bool)
+            or not isinstance(config["num_classes"], int)
+            or len(labels) != config["num_classes"]):
         raise ValueError("Checkpoint num_classes does not match label_values")
     for key, minimum in (("base_channels", 1), ("image_size", 32), ("samples", 1), ("seed", 0)):
         value = config[key]
@@ -57,7 +68,8 @@ def _validate_checkpoint(checkpoint: dict, synthetic: bool) -> tuple[dict, int]:
         foreground_label = config["prostate_label"]
         if foreground_label is None:
             raise ValueError("Real-data checkpoint must specify a documented prostate_label")
-        if foreground_label == 0 or foreground_label not in labels:
+        if (isinstance(foreground_label, bool) or not isinstance(foreground_label, int)
+                or foreground_label == 0 or foreground_label not in labels):
             raise ValueError("prostate_label must be a non-background raw value in label_values")
     return config, labels.index(foreground_label)
 
@@ -71,7 +83,7 @@ def run_prediction(checkpoint: str | Path, output: str | Path = "runs/prediction
     if split not in ("val", "test"):
         raise ValueError("Prediction split must be val or test")
     selected_device = _device(device)
-    payload = torch.load(Path(checkpoint), map_location=selected_device, weights_only=True)
+    payload = torch.load(Path(checkpoint), map_location="cpu", weights_only=True)
     config, foreground_channel = _validate_checkpoint(payload, synthetic)
     if synthetic:
         if manifest is not None:
@@ -82,12 +94,20 @@ def run_prediction(checkpoint: str | Path, output: str | Path = "runs/prediction
     else:
         if manifest is None:
             raise ValueError("Real-data prediction requires --manifest")
+        manifest_sha256 = hashlib.sha256(Path(manifest).read_bytes()).hexdigest()
+        if manifest_sha256 != config.get("manifest_sha256"):
+            raise ValueError("Prediction manifest does not match the checkpoint manifest_sha256; "
+                             "use the unchanged training CSV to preserve patient split assignments")
         prediction_seed = None
         data = HipMRIDataset(manifest, split, image_size=config["image_size"],
                             label_values=config["label_values"], augment=False)
     model = build_model(config["model"], in_channels=1, num_classes=config["num_classes"],
                         base_channels=config["base_channels"]).to(selected_device)
-    model.load_state_dict(payload["model_state"], strict=True)
+    try:
+        model.load_state_dict(payload["model_state"], strict=True)
+    except (RuntimeError, TypeError) as exc:
+        raise ValueError("Checkpoint model_state is incompatible with its model configuration") from exc
+    del payload["model_state"]
     model.eval()
 
     count = min(limit, len(data))
@@ -101,6 +121,8 @@ def run_prediction(checkpoint: str | Path, output: str | Path = "runs/prediction
             sample = data[index]
             with torch.inference_mode():
                 logits = model(sample["image"].unsqueeze(0).to(selected_device))
+                if not torch.isfinite(logits).all():
+                    raise ValueError("Checkpoint produced non-finite logits; prediction is invalid")
                 prediction = logits.argmax(dim=1)[0].cpu()
             image = sample["image"][0].cpu().numpy()
             target = sample["mask"].cpu()
@@ -144,6 +166,7 @@ def run_prediction(checkpoint: str | Path, output: str | Path = "runs/prediction
         "checkpoint": str(Path(checkpoint).resolve()),
         "model": config["model"], "epoch": payload["epoch"], "device": str(selected_device),
         "split": split if not synthetic else "synthetic_holdout",
+        "manifest_sha256": None if synthetic else manifest_sha256,
         "prediction_seed": prediction_seed,
         "foreground_raw_label": config["label_values"][foreground_channel],
         "foreground_channel": foreground_channel,

@@ -10,6 +10,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import math
 import os
 import platform
 import random
@@ -122,8 +123,8 @@ def parse_args(argv=None):
     args = parser.parse_args(argv)
     if min(args.epochs, args.batch_size, args.base_channels, args.samples, args.threads) < 1:
         parser.error("epochs, batch-size, width, samples and threads must be positive")
-    if args.image_size < 32 or args.lr <= 0 or args.seed < 0:
-        parser.error("image-size must be >=32, lr positive and seed non-negative")
+    if args.image_size < 32 or not math.isfinite(args.lr) or args.lr <= 0 or args.seed < 0:
+        parser.error("image-size must be >=32, lr finite and positive, and seed non-negative")
     if args.synthetic:
         if args.label_values is not None or args.prostate_label is not None or args.augment:
             parser.error("synthetic mode has fixed labels [0,1]; real label/augmentation flags do not apply")
