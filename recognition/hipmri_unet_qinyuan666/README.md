@@ -6,44 +6,295 @@ cost. The selected task is HipMRI segmentation, with a Normal-difficulty main
 model. The immediate deliverable is a one-page midpoint feasibility review and
 reproducible preliminary engineering evidence, not a completed clinical study.
 
-## Planned investigation
+Prepared **14 October 2026**. The check-off calendar date awaits confirmation.
+Student account: **s4906920**. Repository: [course fork](https://github.com/qinyuan666/PatternAnalysis-2026/tree/topic-recognition).
 
-- Dataset: the course-provided HipMRI 2D NIfTI slices under
-  `/home/groups/comp3710/HipMRI_Study_open/keras_slices_data`.
-- Baseline: a standard encoder-decoder 2D U-Net with skip connections [1].
-- Main model: a 2D adaptation of the Improved U-Net in Isensee et al. [2], using
-  residual context blocks, instance normalization and deep supervision.
-- Compare both on identical patient-disjoint splits and training budgets.
-- Report per-class Dice/IoU, patient-level results, boundary errors, parameter
-  count, peak training GPU memory and batch-one inference latency.
-- Analyse 3–5 actual failure cases before making an evidence-based recommendation.
+## Midpoint materials and status
 
-## Data status
+- [One-page feasibility review (PDF)](feasibility_review.pdf), with editable
+  [Markdown source](feasibility_review.md), also reproduced below.
+- [Chinese discussion notes](MIDPOINT_NOTES_ZH.md): understand the choices,
+  measurements and limitations before the tutor discussion.
+- [Rangpur instructions](RANGPUR.md): login, bounded inventory, data audit and
+  an optional real-data pilot after resource allocation.
 
-Real HipMRI data and its label dictionary have not yet been provided. Patient IDs,
-prostate label values, slice ordering and physical spacing must be audited before
-real-data training. No real-data accuracy or Dice result is claimed.
+| Item | Status |
+|---|---|
+| Baseline and main model, modular training/prediction | Implemented |
+| NIfTI loading, leakage checks, losses/metrics, checkpoint tests | 41 tests passed with artificial fixtures |
+| Synthetic training, reload and prediction | Completed for both models |
+| Local GPU resource measurements | Completed for the stated tensor configurations |
+| Actual HipMRI access, patient identity and label dictionary | Pending student/course access |
+| Real-data segmentation scores and failure cases | Not obtained |
+| Tutor discussion and check-off | Student must attend; not claimed complete |
 
-The example CSV contains fictitious filenames. Use an explicit manifest rather
-than guessing patient IDs from filenames. Local manifests, images and weights
-must not be committed. Curated synthetic diagnostic figures may be committed
-when clearly labelled as synthetic.
+The task permits preliminary resource evidence for the midpoint. These materials
+do not claim a completed final assessment or successful medical segmentation.
 
-## Reproducibility
+## Problem and model choices
 
-Dependency versions are recorded in `requirements.txt`. Training and prediction
-commands and measured results will be documented as the midpoint experiment is
-completed. The code will use an explicit synthetic mode for infrastructure checks;
-such checks do not establish medical segmentation performance.
+**Question:** does the improved model reduce prostate contour errors enough to
+justify additional GPU cost, compared with a standard 2D U-Net?
+
+The baseline [1] has five encoder levels, double convolutions, max-pooling,
+transposed-convolution upsampling and concatenated skip connections. This
+implementation uses same padding and configurable channel width, rather than the
+original paper's valid-convolution/cropping design.
+
+The main model adapts Isensee et al. [2]: strided downsampling, pre-activation
+residual context blocks, instance normalization, LeakyReLU, spatial dropout and
+nearest-neighbour upsampling. Three segmentation heads are upsampled and summed
+as logits, providing deep supervision. It is a **2D implementation variant** of
+the approved Improved U-Net option, not a reproduction of the complete 3D BraTS
+training, augmentation or ensemble. Baseline and main model use the same chosen
+width and loss, but do not have identical parameter counts.
+
+`build_model(name, in_channels=1, num_classes=2, base_channels=16)` accepts
+`unet` or `improved_unet`. Both return raw logits `[B,C,H,W]` at the input size,
+supporting dimensions >=32. The real-data class count is set from the verified
+global label dictionary; the default two outputs are only the software-check setup.
+
+## Data contract and leakage controls
+
+Course data path: `/home/groups/comp3710/HipMRI_Study_open/keras_slices_data`.
+Use a private CSV with `image,mask,patient_id,split`, following the fictional
+[example](manifest.example.csv). Relative paths resolve against the CSV directory.
+Each patient, including repeated scans/slices, must occur in exactly one split.
+The loader rejects patient and resolved-path reuse across splits. Identity still
+depends on correct supplied metadata; copied file contents are not hash-deduplicated.
+
+Only true 2D NIfTI arrays or `(H,W,1)` arrays are accepted. Image and mask shape,
+affine alignment, finite values and integer labels are checked. An explicit
+`--label-values` list fixes the mapping from raw labels to model channels, with
+background `0` first. Unknown labels fail. `--prostate-label` must be confirmed
+from the dataset documentation: nonzero does not automatically mean prostate.
+
+Images receive per-slice nonzero-voxel z-score normalization, clipped to [-5,5].
+Zero padding stays zero. Images are resized bilinearly and masks by nearest
+neighbour to the same square grid. Optional flips transform both together and
+apply only to training data. No validation/test normalization statistics are fitted.
+
+Training uses cross-entropy plus mean foreground soft Dice loss. Targets are
+integer class indices; the Dice term constructs one-hot targets internally.
+Reported Dice/IoU pool pixels and return `null` when both prediction and truth
+are empty for a class. This is not yet patient-averaged clinical evaluation.
+Boundary F1 uses a two-pixel Chebyshev tolerance on the evaluated grid, not mm.
+Patient-level reporting and anatomically verified apex/base analysis remain
+post-midpoint work, dependent on metadata.
+
+Validation loss selects the checkpoint; test images are not used for selection.
+Real prediction must use the **unchanged training CSV**, verified against its
+recorded SHA256. Fix the split before tuning and leave the test set locked until
+model choices are finalized. A small midpoint pilot may use train/val only,
+explicitly reporting the missing final test evaluation.
+
+## Run the project
+
+The following commands run inside `recognition/hipmri_unet_qinyuan666` with the
+chosen **Python 3.10** environment active. Exact tested versions are in
+[requirements.txt](requirements.txt). On a new machine, create an isolated
+environment, install the course-approved PyTorch build, then the requirements;
+do not replace a shared/course environment blindly.
+
+```bash
+python -m pip install -r requirements.txt
+python -m unittest discover -s tests -v
+```
+
+This Windows workspace already has a root `.venv` using the existing DQN2
+environment's packages plus isolated NIfTI/report dependencies. Its tested
+PyTorch is 2.5.1, CUDA runtime 11.8, Python 3.10.19, on an RTX 4070 Laptop GPU.
+To run its tests without activating an environment, from repository root:
+
+```powershell
+& .\.venv\Scripts\python.exe -m unittest discover -s recognition/hipmri_unet_qinyuan666/tests -v
+```
+
+Reproduce synthetic checks in **new output directories** (training refuses to
+overwrite an existing checkpoint):
+
+```bash
+python train.py --model unet --synthetic --epochs 6 --samples 32 --image-size 128 --batch-size 4 --seed 3710 --device cuda --output runs/reproduce_unet
+python train.py --model improved_unet --synthetic --epochs 6 --samples 32 --image-size 128 --batch-size 4 --seed 3710 --device cuda --output runs/reproduce_improved_unet
+python predict.py --checkpoint runs/reproduce_unet/best.pt --synthetic --device cuda --limit 3 --output runs/reproduce_unet/predictions
+python predict.py --checkpoint runs/reproduce_improved_unet/best.pt --synthetic --device cuda --limit 3 --output runs/reproduce_improved_unet/predictions
+```
+
+Use `--device cpu` if CUDA is unavailable; timings will differ. Each training run
+saves `best.pt`, configuration, JSON summary and training curves. Prediction saves
+an input/ground-truth/prediction/error grid. Checkpoints and raw run directories
+are excluded from Git; reproduce weights using the commands above.
+
+```bash
+python profile_resources.py --model unet --device cuda --output runs/reproduce_resource_unet.json
+python profile_resources.py --model improved_unet --device cuda --output runs/reproduce_resource_improved_unet.json
+```
+
+Real-data commands are in [RANGPUR.md](RANGPUR.md), because they require confirmed
+patient/label metadata and allocated resources. Do not train from the fictional
+manifest or guess anatomical label values.
+
+Seeds and split configurations are recorded. CUDA deterministic settings are
+requested with `warn_only=True`; this PyTorch build warns that its CUDA
+cross-entropy reduction is not deterministic. Exact retraining equality across
+runs/platforms is not guaranteed. The recorded exact agreement is specifically
+**saved-checkpoint reload inference**, not an assertion of bitwise identical retraining.
+
+## Recorded preliminary evidence
+
+The full CPU test suite passed **41 tests**, with zero failures or errors; see
+[verification record](results/verification.json). Tests use artificial fixtures.
+
+The checked-in summaries and figures below are **synthetic engineering evidence**.
+No HipMRI score has been measured. The original training implementation is
+identified in each archived summary's provenance.
+
+| Synthetic check: 128×128, 32 train / 8 val, 6 epochs | U-Net | Improved U-Net |
+|---|---:|---:|
+| Initial validation loss | 1.4524 | 1.6496 |
+| Best validation loss | 0.0274 | 0.0407 |
+| Selected epoch | 5 | 6 |
+| Checkpoint reload exact | Yes | Yes |
+
+Sources: [baseline summary](results/smoke_unet.json),
+[improved summary](results/smoke_improved_unet.json).
+
+![Synthetic baseline training curves](figures/synthetic_curves_unet.png)
+![Synthetic improved-model training curves](figures/synthetic_curves_improved_unet.png)
+
+Separate resource probes: 256×256, base width 16, training batch 4, float32,
+Adam, **two output classes**. Each model ran in its own process. Three training
+warmups and ten measured steps; batch-one inference used five warmups and twenty
+repeats with CUDA synchronization. Short laptop timings vary between runs.
+
+| Resource probe | U-Net | Improved U-Net |
+|---|---:|---:|
+| Parameters | 1,940,834 | 3,186,342 |
+| Peak allocated memory (GiB) | 0.290 | 0.639 |
+| Peak reserved memory (GiB) | 0.438 | 0.820 |
+| Median training step (ms) | 21.765 | 41.311 |
+| Median batch-one model inference (ms) | 1.395 | 4.224 |
+
+Sources: [baseline resource probe](results/resource_unet.json),
+[improved resource probe](results/resource_improved_unet.json).
+Memory is PyTorch allocator usage, not total device usage. Inference excludes
+disk access and preprocessing. Actual multiclass HipMRI costs must be remeasured.
+
+Prediction examples use a separate synthetic seed (5710), distinct from training
+and validation. These are illustration examples, not clinical failure cases:
+
+![Synthetic baseline prediction examples](figures/synthetic_predictions_unet.png)
+![Synthetic improved-model prediction examples](figures/synthetic_predictions_improved_unet.png)
+
+**Current recommendation:** proceed to a small real-data audit and baseline pilot.
+The local tensor configuration fits the available GPU, and both software pipelines
+run. There is no evidence yet that the improved model benefits real prostate
+boundaries. A final recommendation requires matched patient splits, actual
+segmentation results and 3–5 genuine failure analyses.
+
+## Written midpoint feasibility review
+
+The following is the same review as the standalone one-page PDF.
+
+<!-- FEASIBILITY_START -->
+
+**Student:** s4906920 | **Prepared:** 14 October 2026 | **Check-off date:** to be confirmed
+
+### 1. Requirements and scope
+
+For MRI researchers, build a reproducible 2D multiclass
+segmentation prototype and determine whether an Improved U-Net reduces boundary
+errors enough to justify its compute cost. This is not a clinical deployment.
+**Proposed final acceptance criteria**, not achieved results:
+
+1. Zero patient overlap across train/validation/test; verified image-mask pairing,
+   one global label dictionary and a confirmed prostate class.
+2. Mean patient-level prostate Dice >= 0.75 on the held-out test set; also report
+   per-class Dice/IoU and variation across patients.
+3. Improved U-Net gains >= 0.02 prostate boundary F1 over the baseline at a fixed
+   two-pixel tolerance, with prostate Dice decreasing by no more than 0.01.
+4. At the chosen real-data configuration, peak PyTorch allocated training memory
+   <= 6 GiB and median batch-one model inference <= 100 ms on the local GPU.
+5. Record seeds, splits, configuration and checkpoint reload agreement; explain
+   3-5 genuine failure cases. An unmet accuracy target remains a reportable finding.
+
+### 2. Model, data and rationale
+
+Use course HipMRI slices at
+`/home/groups/comp3710/HipMRI_Study_open/keras_slices_data`.
+Baseline: Ronneberger et al.'s 2D U-Net [1]. Main model: the **Normal-difficulty**
+2D Improved U-Net option, adapting Isensee et al. [2] with residual context blocks,
+instance normalization, spatial dropout and deep supervision. This applies
+multiscale CNN features, skip connections, regularization and gradient
+propagation. It is a configurable 2D adaptation, not a complete reproduction of
+the paper's 3D BraTS training or ensemble. Compare identical patient splits,
+preprocessing and training budgets using cross-entropy plus foreground Dice loss.
+Preserve all verified classes; do not merge every nonzero label into prostate.
+
+### 3. Preliminary feasibility evidence
+
+Both models completed six epochs on **synthetic geometric data**: 32 training and
+8 validation images, 128 x 128, seed 3710. Saved/reloaded predictions agreed
+exactly. Tests cover patient separation, label validation, model gradients and
+metric edge cases. These are pipeline checks, not medical accuracy evidence.
+
+Local RTX 4070 Laptop GPU (8 GB), float32, base width 16: a separate short tensor
+probe used 256 x 256 inputs, training batch 4, **two output classes**:
+
+| Measurement | U-Net | Improved U-Net |
+|---|---:|---:|
+| Parameters | 1,940,834 | 3,186,342 |
+| Peak allocated / reserved memory (GiB) | 0.290 / 0.438 | 0.639 / 0.820 |
+| Median model inference, batch 1 (ms) | 1.395 | 4.224 |
+
+Sources: `results/resource_*.json` and synthetic summaries. CUDA timings are
+synchronized; inference excludes preprocessing/I/O. Allocator memory excludes
+driver/other processes. Actual HipMRI multiclass costs must be remeasured.
+**Real data access, patient metadata and label meanings remain unverified.**
+
+### 4. Risks, budget and next experiments
+
+Provisional post-midpoint budget: 16 working hours and 12 GPU-hours, revised after
+a real-data pilot. Next: verify Rangpur access; audit labels, patient IDs, spacing
+and overlays; freeze patient splits; run a small U-Net pilot; then compare models
+on validation data. Keep test data locked until model choices are finalized.
+Risks are delayed access, mislabeled classes, leakage, limited memory and
+poor apex/base boundaries. If access is delayed, present measured engineering
+evidence and the outstanding dependency. If memory/time is insufficient, reduce
+batch/width for both models and document the change; retain U-Net as the fallback.
+Tutor discussion and personal check-off remain required.
+
+**References:** [1] [Ronneberger et al., 2015](https://arxiv.org/abs/1505.04597).
+[2] [Isensee et al., 2018](https://arxiv.org/abs/1802.10508).
+Assessment: `COMP3710_Report_2026_draft_v2.2.pdf`, Sections 2.2 and 3.
+
+<!-- FEASIBILITY_END -->
+
+To regenerate the PDF from its Markdown source:
+
+```bash
+python -m pip install -r requirements-report.txt
+python build_review_pdf.py
+```
+
+The renderer checks that the result is exactly one A4 page. After changing the
+source, also update its embedded copy above and inspect the rendered PDF.
 
 ## Artificial Intelligence Usage Disclosure
 
-OpenAI Codex assisted with interpreting the assessment, setting up the GitHub fork,
-planning the project and drafting code/documentation. Verification includes review
-against the cited papers, patient-leakage and label-handling tests, forward/backward
-checks, checkpoint reload checks and measured resource experiments. The student
-must personally inspect, understand and verify the submission and keep this
-disclosure accurate. No clinical experiment or tutor check-off is claimed.
+OpenAI Codex assisted with interpreting the assessment, configuring the GitHub
+fork, planning and implementing the models/data pipeline, writing tests,
+debugging, resource measurements, plotting, report drafting and PDF preparation.
+Architecture choices were checked against the primary papers. Verification
+includes patient/label checks, artificial NIfTI integration tests for both models,
+loss/metric edge cases, finite gradients, checkpoint reloads, manifest integrity,
+measured synthetic runs and a rendered one-page PDF inspection.
+
+The student must personally understand and review the code, verify real-data
+metadata and results, and accurately maintain this disclosure. Automated tests
+do not replace that responsibility. No copied student/prior-year PR code is used;
+architectural sources are cited below and in model docstrings. No real-data
+performance or completed tutor check-off is claimed.
 
 ## References
 
