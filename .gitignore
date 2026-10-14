@@ -32,6 +32,9 @@ wandb/
 *.keras
 *.onnx
 *.safetensors
+private_data/
+manifest*.csv
+!manifest.example.csv
 
 # Keep curated report figures in a separate, tracked figures/ folder.
 Thumbs.db
