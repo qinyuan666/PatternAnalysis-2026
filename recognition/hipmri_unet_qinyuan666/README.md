@@ -6,7 +6,6 @@ cost. The selected task is HipMRI segmentation, with a Normal-difficulty main
 model. The immediate deliverable is a one-page midpoint feasibility review and
 reproducible preliminary engineering evidence, not a completed clinical study.
 
-Prepared **14 October 2026**. The student confirmed the check-off date as **Thursday, 15 October 2026**.
 Student account: **s4906920**. Repository: [course fork](https://github.com/qinyuan666/PatternAnalysis-2026/tree/topic-recognition).
 
 ## Midpoint materials and status
@@ -198,7 +197,7 @@ The following is the same review as the standalone one-page PDF.
 
 <!-- FEASIBILITY_START -->
 
-**Student:** s4906920 | **Prepared:** 14 October 2026 | **Check-off date:** 15 October 2026
+**Student:** s4906920
 
 ### 1. Requirements and scope
 

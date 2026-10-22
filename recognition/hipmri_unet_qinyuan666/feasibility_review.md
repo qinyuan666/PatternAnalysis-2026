@@ -1,6 +1,6 @@
 # HipMRI segmentation: midpoint feasibility review
 
-**Student:** s4906920 | **Prepared:** 14 October 2026 | **Check-off date:** 15 October 2026
+**Student:** s4906920
 
 ## 1. Requirements and scope
 
