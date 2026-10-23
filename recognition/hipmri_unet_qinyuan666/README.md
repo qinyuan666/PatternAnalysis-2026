@@ -118,8 +118,16 @@ background `0` first. Unknown labels fail. `--prostate-label` must be confirmed
 from the dataset documentation: nonzero does not automatically mean prostate.
 
 Images receive per-slice nonzero-voxel z-score normalization, clipped to [-5,5].
-Zero padding stays zero. Images are resized bilinearly and masks by nearest
-neighbour to the same square grid. Optional flips transform both together and
+Zero padding stays zero. New training runs default to `--resize-mode pad`:
+images are resized bilinearly and masks by nearest neighbour with the same
+aspect-preserving scale, then centered in a square with zero image/background
+mask padding. Use `--image-size 256 --resize-mode pad` for the acquired course
+slices: both 256 x 128 and 256 x 144 retain every original array pixel, with
+only horizontal padding added. This preserves array proportions, not verified
+physical spacing. `--resize-mode stretch` retains the earlier square-stretch
+behavior; checkpoints without this setting still use stretch when reloaded.
+The mode is saved in the checkpoint and reused by prediction.
+Optional flips transform both together and
 apply only to training data. No validation/test normalization statistics are fitted.
 
 Training uses cross-entropy plus mean foreground soft Dice loss. Targets are

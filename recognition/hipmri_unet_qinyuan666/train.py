@@ -110,6 +110,8 @@ def parse_args(argv=None):
     parser.add_argument("--label-values", type=int, nargs="+")
     parser.add_argument("--prostate-label", type=int, help="documented raw label, never guessed")
     parser.add_argument("--image-size", type=int, default=128)
+    parser.add_argument("--resize-mode", choices=("pad", "stretch"), default="pad",
+                        help="Real slices: aspect-preserving fit and pad, or legacy square stretch.")
     parser.add_argument("--base-channels", type=int, default=16)
     parser.add_argument("--batch-size", type=int, default=4)
     parser.add_argument("--epochs", type=int, default=6)
@@ -158,9 +160,11 @@ def train(args) -> dict:
     else:
         config["manifest_sha256"] = hashlib.sha256(args.manifest.read_bytes()).hexdigest()
         training_data = HipMRIDataset(args.manifest, "train", args.image_size,
-                                     args.label_values, augment=args.augment)
+                                     args.label_values, augment=args.augment,
+                                     resize_mode=args.resize_mode)
         validation_data = HipMRIDataset(args.manifest, "val", args.image_size,
-                                       args.label_values, augment=False)
+                                       args.label_values, augment=False,
+                                       resize_mode=args.resize_mode)
     generator = torch.Generator().manual_seed(args.seed)
     train_loader = DataLoader(training_data, batch_size=args.batch_size, shuffle=True,
                               num_workers=0, generator=generator)

@@ -39,6 +39,10 @@ def _validate_checkpoint(checkpoint: dict, synthetic: bool) -> tuple[dict, int]:
                 "synthetic", "prostate_label", "seed", "samples"}
     if not isinstance(config, dict) or not required.issubset(config):
         raise ValueError("Checkpoint config is missing required model/data fields")
+    config = dict(config)
+    config.setdefault("resize_mode", "stretch")  # Before this option, all real slices were stretched.
+    if config["resize_mode"] not in ("pad", "stretch"):
+        raise ValueError("Checkpoint resize_mode must be pad or stretch")
     if not isinstance(config["synthetic"], bool) or config["synthetic"] != synthetic:
         raise ValueError("Checkpoint data mode and --synthetic must match exactly")
     if (not isinstance(checkpoint.get("model_state"), dict)
@@ -100,7 +104,8 @@ def run_prediction(checkpoint: str | Path, output: str | Path = "runs/prediction
                              "use the unchanged training CSV to preserve patient split assignments")
         prediction_seed = None
         data = HipMRIDataset(manifest, split, image_size=config["image_size"],
-                            label_values=config["label_values"], augment=False)
+                            label_values=config["label_values"], augment=False,
+                            resize_mode=config["resize_mode"])
     model = build_model(config["model"], in_channels=1, num_classes=config["num_classes"],
                         base_channels=config["base_channels"]).to(selected_device)
     try:
@@ -170,6 +175,7 @@ def run_prediction(checkpoint: str | Path, output: str | Path = "runs/prediction
         "prediction_seed": prediction_seed,
         "foreground_raw_label": config["label_values"][foreground_channel],
         "foreground_channel": foreground_channel,
+        "resize_mode": config["resize_mode"],
         "label_values": config["label_values"], "examples_shown": count,
         "dice_empty_case": "Undefined (null) when both target and prediction are empty.",
         "examples": examples,

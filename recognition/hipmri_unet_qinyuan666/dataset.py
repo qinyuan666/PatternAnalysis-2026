@@ -150,23 +150,56 @@ def normalize_slice(image: np.ndarray) -> np.ndarray:
     return result
 
 
+def resize_pair(image: torch.Tensor, mask: torch.Tensor, image_size: int,
+                mode: str = "pad") -> tuple[torch.Tensor, torch.Tensor]:
+    """Fit a CHW image/HW mask into a square, preserving array aspect in pad mode.
+
+    Image interpolation is bilinear, labels nearest-neighbour. Padding is zero
+    after normalization (image) and background class zero (mask). This preserves
+    array proportions, not independently verified physical spacing.
+    """
+    if mode not in ("pad", "stretch") or image_size < 8:
+        raise ValueError("resize mode must be pad or stretch and image_size >= 8.")
+    if mask.ndim != 2 or image.shape != (1, *mask.shape):
+        raise ValueError("Expected an aligned one-channel CHW image and HW mask.")
+    height, width = mask.shape
+    if min(height, width) < 1:
+        raise ValueError("Image and mask dimensions must be positive.")
+    if mode == "pad":
+        scale = image_size / max(height, width)
+        size = (max(1, round(height * scale)), max(1, round(width * scale)))
+    else:
+        size = (image_size, image_size)
+    image = F.interpolate(image.unsqueeze(0), size=size, mode="bilinear",
+                          align_corners=False)[0]
+    mask = F.interpolate(mask[None, None].float(), size=size, mode="nearest")[0, 0].long()
+    top, left = (image_size - size[0]) // 2, (image_size - size[1]) // 2
+    padding = (left, image_size - size[1] - left, top, image_size - size[0] - top)
+    return F.pad(image, padding, value=0), F.pad(mask, padding, value=0)
+
+
 class HipMRIDataset(Dataset):
     """2D slices; the same explicit raw-label mapping must be used for all splits."""
 
     def __init__(self, manifest: str | Path, split: str, image_size: int = 128,
-                 label_values: Sequence[int] = (0, 1), augment: bool = False):
+                 label_values: Sequence[int] = (0, 1), augment: bool = False,
+                 resize_mode: str = "stretch"):
         if split not in SPLITS:
             raise ValueError("split must be train, val, or test.")
         if image_size < 8:
             raise ValueError("image_size must be at least 8 pixels.")
         if augment and split != "train":
             raise ValueError("Augmentation is allowed only for the training split.")
+        if resize_mode not in ("pad", "stretch"):
+            raise ValueError("resize_mode must be pad or stretch.")
         self.label_values = validate_label_values(label_values)
         self.records = [record for record in read_manifest(manifest) if record["split"] == split]
         if not self.records:
             raise ValueError(f"Manifest has no samples in the {split} split.")
         self.image_size = image_size
         self.augment = augment
+        # Keep the historical dataset API default; new training CLI selects pad.
+        self.resize_mode = resize_mode
 
     def __len__(self) -> int:
         return len(self.records)
@@ -175,11 +208,9 @@ class HipMRIDataset(Dataset):
         record = self.records[index]
         image_array, raw_mask = load_nifti_pair(record)
         mapped_mask = map_labels(raw_mask, self.label_values)
-        image = torch.from_numpy(normalize_slice(image_array)).unsqueeze(0).unsqueeze(0)
-        mask = torch.from_numpy(mapped_mask).unsqueeze(0).unsqueeze(0).float()
-        size = (self.image_size, self.image_size)
-        image = F.interpolate(image, size=size, mode="bilinear", align_corners=False)[0]
-        mask = F.interpolate(mask, size=size, mode="nearest")[0, 0].long()
+        image, mask = resize_pair(torch.from_numpy(normalize_slice(image_array)).unsqueeze(0),
+                                  torch.from_numpy(mapped_mask), self.image_size,
+                                  self.resize_mode)
         if self.augment:
             # Geometrically identical flips for image and mask, using torch's seed.
             if torch.rand(()) < 0.5:
