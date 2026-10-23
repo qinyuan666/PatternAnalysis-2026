@@ -34,6 +34,7 @@ private_data/
   hipmri_csiro_v2/
     semantic_MRs_anon/
     semantic_labels_anon/
+  keras_slices_data/  # 六个课程切片目录，已完成本地检查
   source_metadata/
     BriefDataDescription_v2.txt
     download_receipt.json
@@ -97,16 +98,16 @@ semantic_labels_only/
 semantic_MRs/
 ```
 
-`keras_slices_data` 下观察到以下六个目录。训练目录已收到少量文件名示例，
-验证/测试目录内部尚未查看；目录名本身不能证明按患者隔离。
+`keras_slices_data` 下的以下六个目录现已全部下载并检查内容。
+按病例编号的跨目录检查结果见后文；目录名称本身不作为患者隔离的证据。
 
-| 分组名称 | 推测的图像目录 | 推测的分割标注目录 |
+| 分组名称 | 图像目录 | 分割标注目录 |
 |---|---|---|
 | train | `keras_slices_train` | `keras_slices_seg_train` |
 | validate | `keras_slices_validate` | `keras_slices_seg_validate` |
 | test | `keras_slices_test` | `keras_slices_seg_test` |
 
-### 训练文件的配对线索
+### 早期训练文件的配对线索
 
 用户提供了两个训练目录各自 `ls -1 ... | head -5` 的输出。观察到的通用格式为：
 
@@ -118,7 +119,8 @@ keras_slices_seg_train/seg_<病例编号>_week_<周次>_slice_<切片编号>.nii
 这五组名称在病例、周次和切片编号上对应，只有 `case_` / `seg_` 前缀不同。
 后续清单应按这三个字段配对，不能仅把目录排序后按行配对。
 文件名记录覆盖五组示例；其中一对已下载并成功读取为 NIfTI，检查结果见下文。
-病例编号是待核实的患者分组线索，不据此宣称完成患者身份映射或跨分组泄漏检查。
+病例编号是患者分组的线索；后续全量检查验证了这些编号无跨分组重叠，
+但没有独立核实病例编号与实际患者身份的映射。
 
 ### 课程数据使用说明
 
@@ -135,7 +137,7 @@ keras_slices_seg_train/seg_<病例编号>_week_<周次>_slice_<切片编号>.nii
 [项目 README](README.md) 已加入 HipMRI 数据致谢、数据集 DOI 和上面的 2015 年论文引用。
 此处记录课程说明，不将它替代 CSIRO 原始数据包的许可记录。
 
-### 一对课程训练切片：本地检查结果
+### 早期一对课程训练切片：本地检查结果
 
 本地已准备 `private_data/course_sample/` 接收目录，并确认受 Git 忽略规则保护。
 在本机 **Windows PowerShell** 中使用 `scp` 下载已观察到的一对训练图像和标注；
@@ -159,12 +161,52 @@ keras_slices_seg_train/seg_<病例编号>_week_<周次>_slice_<切片编号>.nii
 此结果只验证了一个样本的来源及其已有标签值，没有建立全数据转换规则。
 单个样本不能确定全局标签字典，也不能证明课程切片保留了原始体积的空间坐标或标签语义。
 带文件名、文件哈希和详细检查的私有记录位于 `private_data/course_sample/sample_validation_private.json`；
-公开汇总见 [results/data_source.json](results/data_source.json)。整个课程切片集尚未下载。
-本阶段不训练、不更改课程已有分组，也不把样本检查当作全数据审计。
+公开汇总见 [results/data_source.json](results/data_source.json)。这是一对样本的历史检查记录；
+整个课程切片集的后续本地检查见下一节。
 
 还需确认：文件内容与原始体积的关系、病例/周次映射、标签是否重编码、课程预处理方式，
-以及已有分组的患者隔离。可用 [只读预检脚本](inspect_rangpur.py) 做后续目录检查，
+以及病例编号与患者分组的依据。可用 [只读预检脚本](inspect_rangpur.py) 做远程目录预检，
 操作见 [RANGPUR.md](RANGPUR.md)。仅汇总通用格式进入仓库，具体患者文件名保持私有。
+
+### 完整课程目录：下载后本地检查
+
+用户通过 `scp` 下载，并在连接中断后用 SFTP `reget -R` 续传，已报告传输结束。
+本地路径为 `private_data/keras_slices_data/`。目录包含 25,320 个文件，
+总文件字节数为 629,732,130；远端 `du -sh` 截图的 `795M` 是磁盘占用，
+不作为逐文件字节数或完整性的校验依据。
+
+| 课程分组 | 图像/标注对数 | 文件名中的病例编号数 | 病例/周次组合数 |
+|---|---:|---:|---:|
+| train | 11,460 | 31 | 191 |
+| validate | 660 | 4 | 11 |
+| test | 540 | 3 | 9 |
+| 合计 | 12,660 | 38 | 211 |
+
+每个病例/周次组合有 60 对切片。三组病例编号的两两交集均为零；全部 211 个
+病例/周次键也与本地官方原始体积的文件名键集合一致。这是命名和分组证据，
+不等于已核实每张切片的原始平面、真实患者身份或源文件哈希。
+
+[完整检查结果](results/course_download_audit.json) 记录：
+
+- 25,320 个文件全部通过完整 gzip 流读取（包括 CRC/长度尾部校验）与 NIfTI 读取。
+- 12,660 对均按病例/周次/切片键配对；没有缺失标注、重复规范化键或异常目录项。
+- 每对均为二维数组，图像/标注形状和 affine 一致，数据为有限值，标注为整数。
+- 12,600 对形状为 `256×128`，另 60 对为 `256×144`；后续需要明确统一尺寸的预处理方法。
+- 图像均为 `float32`，标注均为 `uint8`；全数据观察到的标注值为 `0–5`，类别语义仍需与原始说明核对。
+- 所有 affine 均为单位矩阵，空间单位均为 `unknown`，不能据此采用毫米单位指标。
+
+没有远端逐文件清单或独立哈希可用于比对，因此结论是**本地现有下载的完整性检查通过**，
+不声称完成了远端逐文件一致性校验。此次没有生成训练 manifest、改变课程分组或运行模型。
+
+新增 [audit_course_download.py](audit_course_download.py) 可复现该检查；六项人工数据测试
+覆盖正常配对、缺失标注、截断压缩文件、跨周病例重叠、affine 不一致和空目录。
+在项目 Python 环境中，从本项目目录执行以下单行命令：
+
+```bash
+python audit_course_download.py --root private_data/keras_slices_data --output results/course_download_audit.json --private-output private_data/source_metadata/course_download_audit_private.json
+```
+
+公开报告仅含汇总；实际文件名、病例编号列表、SHA-256 和错误详情保留在受 Git 忽略的私有报告中。
 
 ## 以往实验文件的用途
 
@@ -175,6 +217,7 @@ Lab 2 的 OASIS 下载地址及现场演示要求不替代本项目任务文件�
 
 ## 后续步骤的边界
 
-本次仅完成数据获取与说明核对。尚未完成课程 2D 数据等价性确认、患者划分、
-全数据空间/标签审计、真实 MRI 训练、测试集评估或失败案例分析。
+本次完成数据获取、来源说明和本地文件结构/数值完整性核对。尚未完成课程切片与原始体积的
+全量对应、全局类别语义与物理空间确认、经确认的训练清单及预处理、真实 MRI 训练、
+测试集评估或失败案例分析。
 现有高 Dice 图仍然来自合成数据。

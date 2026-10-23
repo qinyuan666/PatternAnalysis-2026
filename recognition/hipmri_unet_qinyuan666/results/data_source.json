@@ -1,5 +1,5 @@
 {
-  "status": "original_3d_release_acquired_and_one_course_2d_pair_checked",
+  "status": "original_3d_and_course_2d_downloads_locally_checked",
   "source": {
     "title": "Labelled weekly MR images of the male pelvis",
     "publisher": "CSIRO",
@@ -93,7 +93,8 @@
     "archive": "private_data/downloads/HipMRI_study_complete_release_v1.zip",
     "extracted_volumes": "private_data/hipmri_csiro_v2",
     "description": "private_data/source_metadata/BriefDataDescription_v2.txt",
-    "course_sample": "private_data/course_sample"
+    "course_sample": "private_data/course_sample",
+    "course_slices": "private_data/keras_slices_data"
   },
   "rangpur_access": {
     "student_reported_successful_login": true,
@@ -141,7 +142,8 @@
       ],
       "segmentation_publication_url_visible": false
     },
-    "course_patient_disjointness_verified": false
+    "course_patient_disjointness_verified": false,
+    "course_case_groups_disjoint_by_filename": true
   },
   "course_sample_check": {
     "scope": "one user-transferred training pair, not a full course dataset audit",
@@ -169,13 +171,34 @@
     },
     "full_course_label_semantics_verified": false
   },
+  "course_acquisition": {
+    "user_reported_transfer_complete": true,
+    "transfer_methods": ["scp", "sftp_recursive_resume"],
+    "server_du_output_reported": "795M; allocated space, not an exact file-byte inventory",
+    "local_check_date_australia_brisbane": "2026-10-24",
+    "local_integrity_passed": true,
+    "local_files": 25320,
+    "local_image_mask_pairs": 12660,
+    "local_compressed_file_bytes": 629732130,
+    "aggregate_report": "results/course_download_audit.json",
+    "private_inventory": "private_data/source_metadata/course_download_audit_private.json",
+    "source_file_manifest_or_hashes_compared": false,
+    "original_release_case_week_key_comparison": {
+      "course_groups": 211,
+      "original_groups": 211,
+      "keys_equal": true,
+      "scope": "filename case/week keys only, not full array correspondence"
+    },
+    "audit_tool_targeted_tests_passed": 6
+  },
   "readiness": {
     "original_data_acquired": true,
-    "course_preprocessed_2d_acquired": false,
-    "course_preprocessed_2d_acquired_scope": "complete course dataset, not the single downloaded pair",
+    "course_preprocessed_2d_acquired": true,
+    "course_preprocessed_2d_acquired_scope": "six course directories locally present and checked; no server file-manifest comparison",
     "course_sample_pair_acquired": true,
     "patient_split_created": false,
     "ready_for_existing_2d_loader": false,
+    "reason_not_training_ready": "Explicit training manifest, global course-label semantics and preprocessing decisions remain pending.",
     "real_data_training_run": false
   }
 }

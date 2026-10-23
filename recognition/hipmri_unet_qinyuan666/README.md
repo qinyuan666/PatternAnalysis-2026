@@ -4,8 +4,9 @@ This individual COMP3710 project investigates whether an Improved U-Net reduces
 prostate boundary errors compared with a standard 2D U-Net at an acceptable GPU
 cost. The selected task is HipMRI segmentation, with a Normal-difficulty main
 model. A synthetic prototype and midpoint review are available. The current
-stage has acquired the official original dataset and its label documentation;
-preparing patient-disjoint 2D inputs and real-data experiments remains future work.
+stage has acquired the official original dataset, its label documentation and
+the course 2D slice directories. Local acquisition checks pass; finalizing the
+training manifest, preprocessing and real-data experiments remains future work.
 
 Student account: **s4906920**. Repository: [course fork](https://github.com/qinyuan666/PatternAnalysis-2026/tree/topic-recognition).
 
@@ -19,6 +20,8 @@ Student account: **s4906920**. Repository: [course fork](https://github.com/qiny
   an optional real-data pilot after resource allocation.
 - [Data acquisition and local files](DATA_ACCESS.md): official original release,
   label dictionary, integrity checks and the remaining course-2D questions.
+- [Course download audit](results/course_download_audit.json): all local files,
+  pairing, numeric labels, shapes and filename case-group separation.
 
 | Item | Status |
 |---|---|
@@ -27,7 +30,9 @@ Student account: **s4906920**. Repository: [course fork](https://github.com/qiny
 | Synthetic training, reload and prediction | Completed for both models |
 | Local GPU resource measurements | Completed for the stated tensor configurations |
 | Original HipMRI 3D data and label dictionary | Downloaded from CSIRO; ZIP CRC passed; 211 image/mask pairs |
-| Course-preprocessed 2D data and patient mapping | Use terms previewed; one 256 x 128 pair downloaded and read successfully; full dataset and patient mapping pending |
+| Course-preprocessed 2D download | 25,320 files / 12,660 pairs locally checked; filename case groups disjoint across course splits |
+| Download audit tool | Six targeted tests passed, including truncated gzip and missing-mask failures |
+| Training manifest and patient mapping | Not finalized; filename grouping is not independent patient-identity verification |
 | Real-data segmentation scores and failure cases | Not obtained |
 | Tutor discussion and check-off | Student must attend; not claimed complete |
 
@@ -74,6 +79,26 @@ For this pair only, both arrays exactly match a plane from the same case/week
 in the original release after plane selection and an in-plane flip. The course
 filename's slice index differs from the matched original array index; no general
 course preprocessing rule is inferred from this single match.
+
+The subsequent full local acquisition audit checked all 12,660 pairs: 11,460
+train, 660 validation and 540 test, with respectively 31, 4 and 3 filename case
+groups and no case-group overlap. Full gzip-stream and NIfTI reads, pairing,
+finite values, matching image/mask shapes and affines, and integer labels passed.
+There are 12,600 pairs of shape 256 x 128 and 60 of shape 256 x 144. Observed
+mask values are 0–5; numeric values alone do not establish their anatomical
+meanings. Every affine is identity and every spatial unit is unknown. Physical
+spacing, global label semantics and final preprocessing remain unverified.
+No remote per-file inventory or source hashes have been compared.
+
+Reproduce this read-only acquisition audit from the project directory:
+
+```bash
+python audit_course_download.py --root private_data/keras_slices_data --output results/course_download_audit.json --private-output private_data/source_metadata/course_download_audit_private.json
+```
+
+The public report contains aggregates; filenames, case IDs and locally computed
+hashes remain in the ignored private report. This does not create a training CSV
+or change the course splits. See [DATA_ACCESS.md](DATA_ACCESS.md) for the limits.
 The original public release is now stored privately on the local machine; it
 contains 3D volumes rather than this course-preprocessed 2D directory. Its
 official raw labels are background 0, body 1, bones 2, bladder 3, rectum 4 and
@@ -309,8 +334,8 @@ source, also update its embedded copy above and inspect the rendered PDF.
 
 Data were provided by HipMRI Study via the CSIRO Data Access Portal:
 Dowling and Greer, *Labelled weekly MR images of the male pelvis* [4].
-The original release is acquired locally; the COMP3710 course-preprocessed
-slice files are being checked through the Rangpur directory described above.
+The original release and COMP3710 course-preprocessed slice files have been
+acquired locally, with acquisition checks described above.
 The study's acquisition publication is cited in [5], as listed in the course
 data-use notice and the official collection metadata.
 
