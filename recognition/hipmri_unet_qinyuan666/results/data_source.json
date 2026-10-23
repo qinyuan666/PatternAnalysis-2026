@@ -1,5 +1,5 @@
 {
-  "status": "course_label_dictionary_manifest_and_input_pipeline_prepared",
+  "status": "first_real_unet_training_pilot_completed",
   "source": {
     "title": "Labelled weekly MR images of the male pelvis",
     "publisher": "CSIRO",
@@ -217,11 +217,22 @@
     "course_sample_pair_acquired": true,
     "patient_split_created": false,
     "ready_for_existing_2d_loader": true,
-    "real_data_training_run": false,
+    "real_data_training_run": true,
     "course_split_manifest_created": true,
     "split_policy": "Existing course splits preserved; no new random patient split created.",
     "project_label_dictionary_adopted": true,
     "ready_for_initial_training_pilot": true
+  },
+  "real_data_pilot": {
+    "model": "unet",
+    "epochs": 1,
+    "summary": "results/pilot_unet.json",
+    "notes": "REAL_DATA_PILOT.md",
+    "checkpoint_reload_exact": true,
+    "validation_prediction_examples_checked": 4,
+    "test_set_model_evaluation_performed": false,
+    "patient_level_evaluation_completed": false,
+    "real_improved_unet_comparison_completed": false
   },
   "preparation": {
     "label_dictionary": "labels.json",

@@ -6,8 +6,9 @@ cost. The selected task is HipMRI segmentation, with a Normal-difficulty main
 model. A synthetic prototype and midpoint review are available. The current
 stage has acquired the official original dataset, its label documentation and
 the course 2D slice directories. The project label dictionary, private training
-manifest and aspect-preserving preprocessing are prepared. Real-data model
-training and evaluation remain future work.
+manifest and aspect-preserving preprocessing are prepared. A one-epoch real-data
+U-Net pilot has completed on the local GPU. Full training, the real-data model
+comparison and final test evaluation remain future work.
 
 Student account: **s4906920**. Repository: [course fork](https://github.com/qinyuan666/PatternAnalysis-2026/tree/topic-recognition).
 
@@ -25,6 +26,8 @@ Student account: **s4906920**. Repository: [course fork](https://github.com/qiny
   pairing, numeric labels, shapes and filename case-group separation.
 - [Label evidence](results/label_verification.json), [manifest preparation](results/data_preparation.json)
   and [actual input checks](results/preprocessing_check.json): the next completed preparation stage.
+- [Real-data pilot notes (Chinese)](REAL_DATA_PILOT.md) and [aggregate results](results/pilot_unet.json):
+  one complete U-Net training epoch, validation, checkpoint reload and prediction.
 
 | Item | Status |
 |---|---|
@@ -37,13 +40,14 @@ Student account: **s4906920**. Repository: [course fork](https://github.com/qiny
 | Download audit tool | Six targeted tests passed, including truncated gzip and missing-mask failures |
 | Project label dictionary | Official 0–5 mapping adopted; exact image/mask correspondence verified in three all-class training cases |
 | Training manifest and preprocessing | Private CSV frozen with source hashes checked; course Case groups retained; 256 x 256 padding tested on real inputs |
-| Real-data segmentation scores and failure cases | Not obtained |
+| Real-data U-Net pilot | One epoch completed; pooled validation prostate Dice 0.7244; reload and four example predictions checked |
+| Full model comparison, patient-level scores and failure cases | Not completed |
 | Tutor discussion and check-off | Student must attend; not claimed complete |
 
 The task permits preliminary resource evidence for the midpoint. The review below
 records the earlier synthetic-prototype stage; the data-source update is in
-[results/data_source.json](results/data_source.json). No real-data training,
-completed final assessment or successful medical segmentation is claimed.
+[results/data_source.json](results/data_source.json). The later real-data pilot is
+reported separately; completed final assessment or clinical validity is not claimed.
 
 ## Problem and model choices
 
@@ -211,15 +215,15 @@ python profile_resources.py --model unet --device cuda --output runs/reproduce_r
 python profile_resources.py --model improved_unet --device cuda --output runs/reproduce_resource_improved_unet.json
 ```
 
-The local data inputs are ready for a separate initial baseline experiment.
-The following is a proposed **next** one-epoch run, not an experiment already run:
+The first real-data baseline pilot completed with the following configuration.
+Its original output is `runs/real_unet_pilot`; use a new output directory to reproduce it:
 
 ```bash
-python train.py --model unet --manifest private_data/manifests/course_v1.csv --label-values 0 1 2 3 4 5 --prostate-label 5 --image-size 256 --resize-mode pad --batch-size 4 --epochs 1 --output runs/real_unet_pilot
+python train.py --model unet --manifest private_data/manifests/course_v1.csv --label-values 0 1 2 3 4 5 --prostate-label 5 --image-size 256 --resize-mode pad --batch-size 4 --epochs 1 --device cuda --output runs/real_unet_pilot_reproduce
 ```
 
-Use a new output directory for each experiment. The initial comparison will need
-fresh six-class GPU measurements; earlier resource results used two classes.
+Use a new output directory for each experiment. Six-class baseline GPU measurements
+are in the pilot summary; the six-class Improved U-Net measurement is still pending.
 [RANGPUR.md](RANGPUR.md) remains available for optional remote compute.
 
 Seeds and split configurations are recorded. CUDA deterministic settings are
@@ -236,8 +240,28 @@ padding checks, the expanded **52-test regression suite** passed; four new
 manifest tests then passed separately. Tests use artificial fixtures. Real NIfTI
 input checks (without a model run) are in [results/preprocessing_check.json](results/preprocessing_check.json).
 
-The checked-in summaries and figures below are **synthetic engineering evidence**.
-No HipMRI score has been measured. The original training implementation is
+The real-data pilot used all 11,460 training and 660 validation slices, batch 4,
+base width 16, six classes, padding to 256 x 256, Adam at 0.001 and seed 3710,
+without augmentation. Validation loss fell from 2.6326 to 0.5504. After one epoch,
+pooled prostate Dice/IoU were **0.7244 / 0.5679**, and macro foreground Dice was
+**0.8215**. Training plus post-epoch validation and checkpoint saving took
+**129.56 seconds**; peak allocator memory was **0.296 GiB allocated / 0.420 GiB reserved**.
+The six-class model has **1,940,902 parameters**; batch-one model-only median
+inference was **2.072 ms**. Checkpoint reload was exact. Initial validation and
+final reload/inference checks are outside the training timer.
+
+See [full pilot notes and private output locations](REAL_DATA_PILOT.md),
+[machine-readable evidence](results/pilot_unet.json) and
+[per-class validation chart](figures/real_pilot_unet_validation.png).
+These scores pool pixels across slices, include padded background and are not
+patient-averaged or test-set scores. One epoch does not establish convergence
+or achievement of the assignment's patient-level target. The first four validation
+examples contain no prostate in either truth or prediction, so their example Dice
+is undefined; the aggregate prostate score above uses the complete validation set.
+No test-set model evaluation was performed.
+
+The remaining summaries and figures in this section are historical **synthetic engineering evidence**.
+The original training implementation is
 identified in each archived summary's provenance.
 
 | Synthetic check: 128×128, 32 train / 8 val, 6 epochs | U-Net | Improved U-Net |
@@ -269,7 +293,8 @@ repeats with CUDA synchronization. Short laptop timings vary between runs.
 Sources: [baseline resource probe](results/resource_unet.json),
 [improved resource probe](results/resource_improved_unet.json).
 Memory is PyTorch allocator usage, not total device usage. Inference excludes
-disk access and preprocessing. Actual multiclass HipMRI costs must be remeasured.
+disk access and preprocessing. The six-class real baseline was measured separately
+above; a matched six-class Improved U-Net measurement remains to be done.
 
 Prediction examples use a separate synthetic seed (5710), distinct from training
 and validation. These are illustration examples, not clinical failure cases:
@@ -277,9 +302,10 @@ and validation. These are illustration examples, not clinical failure cases:
 ![Synthetic baseline prediction examples](figures/synthetic_predictions_unet.png)
 ![Synthetic improved-model prediction examples](figures/synthetic_predictions_improved_unet.png)
 
-**Current recommendation:** proceed to a small real-data audit and baseline pilot.
-The local tensor configuration fits the available GPU, and both software pipelines
-run. There is no evidence yet that the improved model benefits real prostate
+**Current recommendation:** plan a fixed longer baseline training budget and add
+Case-level validation, then compare Improved U-Net under matched settings.
+The real baseline fits the local GPU and completes training, reload and prediction.
+There is no evidence yet that the improved model benefits real prostate
 boundaries. A final recommendation requires matched patient splits, actual
 segmentation results and 3–5 genuine failure analyses.
 
@@ -396,13 +422,15 @@ debugging, resource measurements, plotting, report drafting and PDF preparation.
 Architecture choices were checked against the primary papers. Verification
 includes patient/label checks, artificial NIfTI integration tests for both models,
 loss/metric edge cases, finite gradients, checkpoint reloads, manifest integrity,
-measured synthetic runs and a rendered one-page PDF inspection.
+measured synthetic runs and a rendered one-page PDF inspection. Codex also assisted
+with the one-epoch real-data baseline run, validation summaries and prediction checks.
 
 The student must personally understand and review the code, verify real-data
 metadata and results, and accurately maintain this disclosure. Automated tests
 do not replace that responsibility. No copied student/prior-year PR code is used;
-architectural sources are cited below and in model docstrings. No real-data
-performance or completed tutor check-off is claimed.
+architectural sources are cited below and in model docstrings. Real-data evidence
+is limited to the documented baseline pilot; final evaluation, clinical validity
+and completed tutor check-off are not claimed.
 
 ## References
 
