@@ -31,6 +31,7 @@
     "official_independent_checksum_compared": false
   },
   "inventory": {
+    "scope": "official_original_zip; not the Rangpur course directory",
     "archive_entries": 424,
     "nifti_file_count": 422,
     "image_volumes": 211,
@@ -96,7 +97,29 @@
   "rangpur_access": {
     "student_reported_successful_login": true,
     "assistant_noninteractive_ssh_result": "port 22 connection timed out",
-    "course_directory_listing_received": false
+    "course_directory_listing_received": true,
+    "evidence": "user-supplied terminal screenshot; not an assistant SSH session",
+    "reported_hostname": "login0.compute.eait.uq.edu.au",
+    "reported_python_version": "3.14.7",
+    "project_dependencies_verified_on_reported_python": false,
+    "course_root": "/home/groups/comp3710/HipMRI_Study_open",
+    "observed_root_entries": [
+      "data_use_agreement.txt",
+      "keras_slices_data",
+      "semantic_labels_only",
+      "semantic_MRs"
+    ],
+    "observed_slice_directories": [
+      "keras_slices_seg_test",
+      "keras_slices_seg_train",
+      "keras_slices_seg_validate",
+      "keras_slices_test",
+      "keras_slices_train",
+      "keras_slices_validate"
+    ],
+    "course_file_examples_received": false,
+    "course_data_use_agreement_read": false,
+    "course_patient_disjointness_verified": false
   },
   "readiness": {
     "original_data_acquired": true,

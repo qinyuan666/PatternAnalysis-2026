@@ -81,27 +81,57 @@ semantic_labels_anon/Case_<编号>_Week<周数>_SEMANTIC_LFOV.nii.gz
 这些模式来自实际压缩包目录。病例编号与患者身份的映射依据应在正式划分前记录清楚；
 同一病例的不同 Week 及其切片不能分到不同数据集。当前没有生成训练/验证/测试划分。
 
-## 已登录 Rangpur 后的最小核对
+## Rangpur 课程目录：已确认与待核对内容
 
-用户已确认可从自己的终端登录 Rangpur；助手环境的一次非交互连接在 22 端口超时。
-当前尚未取得课程数据目录的实际输出，因此不能把登录成功视为已核对数据目录。
+用户提供的终端截图显示主机为 `login0.compute.eait.uq.edu.au`，
+`python3 --version` 输出 `Python 3.14.7`，且课程目录确实存在。
+该 Python 版本仅作为截图观测记录，不表示已经验证项目依赖或训练环境。
+本次依据用户终端输出记录；助手此前的非交互 SSH 连接在 22 端口超时。
 
-在已经登录的远程终端中，逐条执行：
+`/home/groups/comp3710/HipMRI_Study_open` 下观察到：
 
-```bash
-hostname
-python3 --version
-ls -ld /home/groups/comp3710/HipMRI_Study_open/keras_slices_data
-ls -1 /home/groups/comp3710/HipMRI_Study_open | head -20
-ls -1 /home/groups/comp3710/HipMRI_Study_open/keras_slices_data | head -20
+```text
+data_use_agreement.txt
+keras_slices_data/
+semantic_labels_only/
+semantic_MRs/
 ```
 
-这些命令只打印版本、目录属性和前 20 个名称，不修改源数据，不启动训练。
-如需更严格限制目录遍历，可使用已有的 [只读预检脚本](inspect_rangpur.py)，
-操作见 [RANGPUR.md](RANGPUR.md)。实际目录输出和患者文件名保持私有。
+`keras_slices_data` 下观察到以下六个目录。表中的图像/标注角色是按名称推断，
+尚未检查内部文件；目录名也不能证明训练、验证、测试集按患者隔离。
 
-还需确认：课程 2D 图像与 mask 如何配对、切片如何关联患者及周次、是否做过
-标签重编码，以及课程预处理采用了什么方向和尺寸。
+| 分组名称 | 推测的图像目录 | 推测的分割标注目录 |
+|---|---|---|
+| train | `keras_slices_train` | `keras_slices_seg_train` |
+| validate | `keras_slices_validate` | `keras_slices_seg_validate` |
+| test | `keras_slices_test` | `keras_slices_seg_test` |
+
+下一步在已经登录的远程终端中，**每次只复制一个代码框中的一行，回车并等输出后再执行下一条**。
+先预览数据使用说明的前 80 行；这不等于完整协议已经审阅或接受：
+
+```bash
+head -80 /home/groups/comp3710/HipMRI_Study_open/data_use_agreement.txt
+```
+
+再查看训练图像目录的前 5 个名称：
+
+```bash
+ls -1 /home/groups/comp3710/HipMRI_Study_open/keras_slices_data/keras_slices_train | head -5
+```
+
+最后查看训练标注目录的前 5 个名称：
+
+```bash
+ls -1 /home/groups/comp3710/HipMRI_Study_open/keras_slices_data/keras_slices_seg_train | head -5
+```
+
+这些命令只读取说明和名称，不修改源数据、不运行 Python、不启动训练。
+若终端提示符变成单独的 `>`，先按 `Ctrl+C` 取消未结束的输入，恢复正常提示符后再逐条执行。
+如需更严格限制目录遍历，可使用已有的 [只读预检脚本](inspect_rangpur.py)，
+操作见 [RANGPUR.md](RANGPUR.md)。仅汇总目录结构进入仓库，实际患者文件名保持私有。
+
+还需确认：数据使用说明、实际文件格式、图像与 mask 的配对方式、切片与患者及周次的关联、
+标签是否重编码，以及课程预处理采用的方向和尺寸。当前未下载课程切片，也未核实已有分组的患者隔离。
 之后再选择取得课程切片，或从官方体积进行明确记录的 2D 预处理；本次不提前执行。
 
 ## 以往实验文件的用途

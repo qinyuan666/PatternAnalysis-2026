@@ -4,8 +4,8 @@
 
 ## 现在从这里开始
 
-1. 查看 [数据获取与本地位置](recognition/hipmri_unet_qinyuan666/DATA_ACCESS.md)：原始数据已下载并校验，课程 2D 目录还需核对。
-2. 用户已确认 Rangpur 登录成功；按该文档的简短命令核对实际课程目录。
+1. 查看 [数据获取与本地位置](recognition/hipmri_unet_qinyuan666/DATA_ACCESS.md)：原始数据已下载并校验；Rangpur 课程目录已确认存在，内部文件仍待核对。
+2. 按该文档逐条执行三个简短命令，预览数据使用说明与训练图像/标注文件名，确认配对线索。课程目录的 train/validate/test 命名尚不能证明患者隔离。
 3. 中期材料保留在 [一页评估 PDF](recognition/hipmri_unet_qinyuan666/feasibility_review.pdf) 和 [中文讨论笔记](recognition/hipmri_unet_qinyuan666/MIDPOINT_NOTES_ZH.md)，描述当时的合成验证阶段。
 4. 完整运行方法、实验记录和 AI 披露见 [项目 README](recognition/hipmri_unet_qinyuan666/README.md)。
 
@@ -31,6 +31,7 @@
 - [x] 确定一个选题、主模型、基线模型和目标难度。
 - [x] 本机运行环境和 GPU 已验证，已测量显存和耗时。
 - [x] 已获取官方 HipMRI 原始数据包和标签说明，完成大小、ZIP CRC、配对清单和三个体积样本的基本检查。
+- [x] 已收到 Rangpur 终端截图，确认课程目录存在并观察到六个训练/验证/测试相关目录；内部文件及使用说明待核对。
 - [x] 明确患者隔离、全局标签映射和拟议验收指标；真实患者划分待元数据确认。
 - [x] 数据检查和模型流程已通过人工 NIfTI 测试与合成训练；真实数据 pilot 尚未执行。
 - [x] 准备一页可行性评估、PDF 和讨论笔记。

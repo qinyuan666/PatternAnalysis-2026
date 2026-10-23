@@ -27,7 +27,7 @@ Student account: **s4906920**. Repository: [course fork](https://github.com/qiny
 | Synthetic training, reload and prediction | Completed for both models |
 | Local GPU resource measurements | Completed for the stated tensor configurations |
 | Original HipMRI 3D data and label dictionary | Downloaded from CSIRO; ZIP CRC passed; 211 image/mask pairs |
-| Course-preprocessed 2D data and patient mapping | Not yet obtained/confirmed; no patient split created |
+| Course-preprocessed 2D data and patient mapping | Six split directories observed in the student's Rangpur terminal; files not acquired locally; patient mapping unverified |
 | Real-data segmentation scores and failure cases | Not obtained |
 | Tutor discussion and check-off | Student must attend; not claimed complete |
 
@@ -62,6 +62,9 @@ global label dictionary; the default two outputs are only the software-check set
 ## Data contract and leakage controls
 
 Course data path: `/home/groups/comp3710/HipMRI_Study_open/keras_slices_data`.
+The student's terminal screenshot confirms train/validate/test directories and
+corresponding `seg` directory names. Their file format, label mapping and patient
+separation remain unverified; directory names alone do not establish a valid split.
 The original public release is now stored privately on the local machine; it
 contains 3D volumes rather than this course-preprocessed 2D directory. Its
 official raw labels are background 0, body 1, bones 2, bladder 3, rectum 4 and
