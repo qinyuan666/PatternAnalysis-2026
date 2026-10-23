@@ -3,12 +3,13 @@
 This individual COMP3710 project investigates whether an Improved U-Net reduces
 prostate boundary errors compared with a standard 2D U-Net at an acceptable GPU
 cost. The selected task is HipMRI segmentation, with a Normal-difficulty main
-model. The immediate deliverable is a one-page midpoint feasibility review and
-reproducible preliminary engineering evidence, not a completed clinical study.
+model. A synthetic prototype and midpoint review are available. The current
+stage has acquired the official original dataset and its label documentation;
+preparing patient-disjoint 2D inputs and real-data experiments remains future work.
 
 Student account: **s4906920**. Repository: [course fork](https://github.com/qinyuan666/PatternAnalysis-2026/tree/topic-recognition).
 
-## Midpoint materials and status
+## Project status and midpoint materials
 
 - [One-page feasibility review (PDF)](feasibility_review.pdf), with editable
   [Markdown source](feasibility_review.md), also reproduced below.
@@ -16,6 +17,8 @@ Student account: **s4906920**. Repository: [course fork](https://github.com/qiny
   measurements and limitations before the tutor discussion.
 - [Rangpur instructions](RANGPUR.md): login, bounded inventory, data audit and
   an optional real-data pilot after resource allocation.
+- [Data acquisition and local files](DATA_ACCESS.md): official original release,
+  label dictionary, integrity checks and the remaining course-2D questions.
 
 | Item | Status |
 |---|---|
@@ -23,12 +26,15 @@ Student account: **s4906920**. Repository: [course fork](https://github.com/qiny
 | NIfTI loading, leakage checks, losses/metrics, checkpoint tests | 41 tests passed with artificial fixtures |
 | Synthetic training, reload and prediction | Completed for both models |
 | Local GPU resource measurements | Completed for the stated tensor configurations |
-| Actual HipMRI access, patient identity and label dictionary | Pending student/course access |
+| Original HipMRI 3D data and label dictionary | Downloaded from CSIRO; ZIP CRC passed; 211 image/mask pairs |
+| Course-preprocessed 2D data and patient mapping | Not yet obtained/confirmed; no patient split created |
 | Real-data segmentation scores and failure cases | Not obtained |
 | Tutor discussion and check-off | Student must attend; not claimed complete |
 
-The task permits preliminary resource evidence for the midpoint. These materials
-do not claim a completed final assessment or successful medical segmentation.
+The task permits preliminary resource evidence for the midpoint. The review below
+records the earlier synthetic-prototype stage; the data-source update is in
+[results/data_source.json](results/data_source.json). No real-data training,
+completed final assessment or successful medical segmentation is claimed.
 
 ## Problem and model choices
 
@@ -56,6 +62,12 @@ global label dictionary; the default two outputs are only the software-check set
 ## Data contract and leakage controls
 
 Course data path: `/home/groups/comp3710/HipMRI_Study_open/keras_slices_data`.
+The original public release is now stored privately on the local machine; it
+contains 3D volumes rather than this course-preprocessed 2D directory. Its
+official raw labels are background 0, body 1, bones 2, bladder 3, rectum 4 and
+prostate 5. See [DATA_ACCESS.md](DATA_ACCESS.md) for sources and the distinction
+between the original data and the still-unverified course slice preprocessing.
+
 Use a private CSV with `image,mask,patient_id,split`, following the fictional
 [example](manifest.example.csv). Relative paths resolve against the CSV directory.
 Each patient, including repeated scans/slices, must occur in exactly one split.
@@ -193,7 +205,9 @@ segmentation results and 3–5 genuine failure analyses.
 
 ## Written midpoint feasibility review
 
-The following is the same review as the standalone one-page PDF.
+The following is the same review as the standalone one-page PDF. It records the
+midpoint state before the subsequent original-data acquisition; current access
+and label findings are documented in DATA_ACCESS.md.
 
 <!-- FEASIBILITY_START -->
 

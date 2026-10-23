@@ -1,12 +1,12 @@
 # COMP3710 项目启动清单
 
-当前目标是准备中期可行性检查材料。选题已确定：HipMRI 2D 分割，标准 2D U-Net 基线，2D Improved U-Net 主模型（Normal）。账号 s4906920。材料已准备；真实数据访问尚未验证，tutor check-off 仍需本人完成。
+选题已确定：HipMRI 2D 分割，标准 2D U-Net 基线，2D Improved U-Net 主模型（Normal），账号 s4906920。中期材料和合成原型已准备。当前第 1 步已取得官方原始 3D 数据及标签说明，尚未准备课程 2D 输入或开始真实训练；tutor check-off 的完成状态尚未收到确认。
 
 ## 现在从这里开始
 
-1. 查看 [一页可行性评估 PDF](recognition/hipmri_unet_qinyuan666/feasibility_review.pdf)。
-2. 阅读 [中文讨论准备笔记](recognition/hipmri_unet_qinyuan666/MIDPOINT_NOTES_ZH.md)，理解模型选择和实测证据的局限。
-3. 按 [Rangpur 操作指南](recognition/hipmri_unet_qinyuan666/RANGPUR.md) 登录并运行只读预检。
+1. 查看 [数据获取与本地位置](recognition/hipmri_unet_qinyuan666/DATA_ACCESS.md)：原始数据已下载并校验，课程 2D 目录还需核对。
+2. 用户已确认 Rangpur 登录成功；按该文档的简短命令核对实际课程目录。
+3. 中期材料保留在 [一页评估 PDF](recognition/hipmri_unet_qinyuan666/feasibility_review.pdf) 和 [中文讨论笔记](recognition/hipmri_unet_qinyuan666/MIDPOINT_NOTES_ZH.md)，描述当时的合成验证阶段。
 4. 完整运行方法、实验记录和 AI 披露见 [项目 README](recognition/hipmri_unet_qinyuan666/README.md)。
 
 ## 仓库
@@ -29,11 +29,12 @@
 最新课程说明、中期检查安排和最终提交日期以 Blackboard/course profile 为准。
 
 - [x] 确定一个选题、主模型、基线模型和目标难度。
-- [x] 本机运行环境和 GPU 已验证，已测量显存和耗时；真实数据权限待确认。
+- [x] 本机运行环境和 GPU 已验证，已测量显存和耗时。
+- [x] 已获取官方 HipMRI 原始数据包和标签说明，完成大小、ZIP CRC、配对清单和三个体积样本的基本检查。
 - [x] 明确患者隔离、全局标签映射和拟议验收指标；真实患者划分待元数据确认。
-- [x] 数据检查和模型流程已通过人工 NIfTI 测试与合成训练；真实数据 pilot 待访问。
+- [x] 数据检查和模型流程已通过人工 NIfTI 测试与合成训练；真实数据 pilot 尚未执行。
 - [x] 准备一页可行性评估、PDF 和讨论笔记。
-- [ ] 在 Rangpur 验证数据访问、患者元数据和标签字典，按条件开展小规模真实基线实验。
+- [ ] 核对课程 2D 切片的患者/周次映射、标签编号与预处理，再开展患者划分和小规模真实基线实验。
 - [ ] 本人在 practical 与 tutor 讨论，并确认 check-off 已登记。
 
 已确认路线：HipMRI 标准 2D U-Net 基线，2D Improved U-Net（Normal）主模型，并在相同患者划分上比较。项目位置：`recognition/hipmri_unet_qinyuan666/`。

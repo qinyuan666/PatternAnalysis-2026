@@ -1,0 +1,108 @@
+{
+  "status": "original_3d_release_acquired_and_checked",
+  "source": {
+    "title": "Labelled weekly MR images of the male pelvis",
+    "publisher": "CSIRO",
+    "authors": [
+      "Jason Dowling",
+      "Peter Greer"
+    ],
+    "doi": "10.25919/45t8-p065",
+    "collection_version": 2,
+    "metadata_url": "https://data.csiro.au/dap/ws/v2/collections/52549",
+    "file_list_url": "https://data.csiro.au/dap/ws/v2/collections/52549/data",
+    "download_url": "https://data.csiro.au/dap/ws/v2/collections/52549/data/58895460",
+    "description_url": "https://data.csiro.au/dap/ws/v2/collections/52549/support/5034",
+    "licence": "CC BY-NC-ND 4.0",
+    "acquired_date_australia_brisbane": "2026-10-23"
+  },
+  "archive": {
+    "filename": "HipMRI_study_complete_release_v1.zip",
+    "bytes": 1373932069,
+    "expected_bytes_from_csiro": 1373932069,
+    "sha256": "09bec67de2193ace4cb889ad7741c1ffbaf90542b577118659827eb3da88700a",
+    "sha256_kind": "locally_computed; not an independently published checksum"
+  },
+  "integrity": {
+    "size_matches_official_metadata": true,
+    "zip_crc_passed": true,
+    "extracted_file_count": 422,
+    "uncompressed_bytes": 1402581779,
+    "official_independent_checksum_compared": false
+  },
+  "inventory": {
+    "archive_entries": 424,
+    "nifti_file_count": 422,
+    "image_volumes": 211,
+    "mask_volumes": 211,
+    "matched_case_week_pairs": 211,
+    "unmatched_image_keys": 0,
+    "unmatched_mask_keys": 0,
+    "unrecognised_filenames": 0,
+    "observed_case_groups": 38,
+    "observed_week_numbers": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+    ],
+    "uncompressed_bytes": 1402581779,
+    "course_2d_directory_present": false,
+    "identity_note": "Case/week pairing follows observed archive filenames. Patient metadata and repeated-scan policy must be documented before splitting."
+  },
+  "documented_raw_labels": {
+    "0": "Background",
+    "1": "Body",
+    "2": "Bones",
+    "3": "Bladder",
+    "4": "Rectum",
+    "5": "Prostate"
+  },
+  "label_mapping_scope": "CSIRO original release only; course keras_slices_data mapping not verified",
+  "description_sha256": "dc3a99204684ced859872d79a75707af3c0ad31d00f5f3213063ce5e30727ee6",
+  "sample_check": {
+    "pairs_checked": 3,
+    "selection": "first, middle and last image in sorted archive names; no train/test split",
+    "all_image_mask_shapes_match": true,
+    "all_image_mask_affines_match": true,
+    "all_images_and_masks_finite": true,
+    "all_masks_integer": true,
+    "observed_shapes": [
+      [
+        256,
+        256,
+        128
+      ]
+    ],
+    "observed_mask_values": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5
+    ],
+    "scope": "Three-volume acquisition sanity check, not a complete anatomical audit or clinical evaluation."
+  },
+  "local_paths_relative_to_project": {
+    "archive": "private_data/downloads/HipMRI_study_complete_release_v1.zip",
+    "extracted_volumes": "private_data/hipmri_csiro_v2",
+    "description": "private_data/source_metadata/BriefDataDescription_v2.txt"
+  },
+  "rangpur_access": {
+    "student_reported_successful_login": true,
+    "assistant_noninteractive_ssh_result": "port 22 connection timed out",
+    "course_directory_listing_received": false
+  },
+  "readiness": {
+    "original_data_acquired": true,
+    "course_preprocessed_2d_acquired": false,
+    "patient_split_created": false,
+    "ready_for_existing_2d_loader": false,
+    "real_data_training_run": false
+  }
+}
