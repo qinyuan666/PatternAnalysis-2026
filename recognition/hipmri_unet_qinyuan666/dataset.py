@@ -1,8 +1,9 @@
 """Patient-isolated 2D NIfTI loading and clearly labelled synthetic smoke data.
 
 Manifest columns: image,mask,patient_id,split. Paths are relative to the CSV.
-Obtain patient IDs and raw label meanings from the dataset documentation; never
-infer either from slice names. ``label_values`` fixes one global class mapping,
+Use a recorded dataset grouping convention for patient IDs, validated against
+source metadata; slice numbers alone do not identify patients. Obtain label
+meanings from authoritative documentation. ``label_values`` fixes a global mapping,
 with background 0 first. No mapping here asserts which class is the prostate.
 """
 
