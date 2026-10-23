@@ -1,5 +1,5 @@
 {
-  "status": "original_3d_release_acquired_and_checked",
+  "status": "original_3d_release_acquired_and_one_course_2d_pair_checked",
   "source": {
     "title": "Labelled weekly MR images of the male pelvis",
     "publisher": "CSIRO",
@@ -92,7 +92,8 @@
   "local_paths_relative_to_project": {
     "archive": "private_data/downloads/HipMRI_study_complete_release_v1.zip",
     "extracted_volumes": "private_data/hipmri_csiro_v2",
-    "description": "private_data/source_metadata/BriefDataDescription_v2.txt"
+    "description": "private_data/source_metadata/BriefDataDescription_v2.txt",
+    "course_sample": "private_data/course_sample"
   },
   "rangpur_access": {
     "student_reported_successful_login": true,
@@ -117,13 +118,62 @@
       "keras_slices_train",
       "keras_slices_validate"
     ],
-    "course_file_examples_received": false,
-    "course_data_use_agreement_read": false,
+    "course_file_examples_received": true,
+    "course_filename_evidence": {
+      "scope": "first five names from each training directory in user-supplied screenshot",
+      "image_pattern": "case_<case_id>_week_<week>_slice_<slice>.nii.gz",
+      "mask_pattern": "seg_<case_id>_week_<week>_slice_<slice>.nii.gz",
+      "matching_name_keys_observed": 5,
+      "candidate_pair_key": ["case_id", "week", "slice"],
+      "pairs_with_nifti_contents_checked": 1,
+      "patient_identity_mapping_verified": false
+    },
+    "course_data_use_agreement_read": true,
+    "course_data_use_agreement_scope": "visible head -80 output in user-supplied screenshot; source file not acquired",
+    "course_data_use_terms_observed": {
+      "no_identification_or_contact_of_participants": true,
+      "noncommercial_use_only": true,
+      "acknowledgement_and_at_least_one_listed_publication_required": true,
+      "data_correctness_not_guaranteed": true,
+      "listed_publication_urls": [
+        "https://doi.org/10.1016/j.ijrobp.2015.08.045",
+        "https://arxiv.org/abs/2011.13615"
+      ],
+      "segmentation_publication_url_visible": false
+    },
     "course_patient_disjointness_verified": false
+  },
+  "course_sample_check": {
+    "scope": "one user-transferred training pair, not a full course dataset audit",
+    "pairs_checked": 1,
+    "image_shape": [256, 128],
+    "mask_shape": [256, 128],
+    "image_dtype": "float32",
+    "mask_dtype": "uint8",
+    "image_mask_shapes_match": true,
+    "image_mask_affines_match_atol_1e_5_rtol_0": true,
+    "both_affines_are_identity": true,
+    "spatial_units_in_header": "unknown",
+    "physical_spacing_verified": false,
+    "images_and_masks_finite": true,
+    "mask_integer": true,
+    "observed_mask_values": [0, 1, 2, 3],
+    "observed_values_are_not_a_global_class_dictionary": true,
+    "existing_load_nifti_pair_passed": true,
+    "original_volume_comparison": {
+      "scope": "one same-case/week volume; no general preprocessing rule established",
+      "image_and_mask_exactly_equal_after_plane_selection_and_flip": true,
+      "original_array_slice_axis_zero_based": 1,
+      "in_plane_flipped_axis_zero_based": 0,
+      "course_filename_slice_index_matches_original_array_index": false
+    },
+    "full_course_label_semantics_verified": false
   },
   "readiness": {
     "original_data_acquired": true,
     "course_preprocessed_2d_acquired": false,
+    "course_preprocessed_2d_acquired_scope": "complete course dataset, not the single downloaded pair",
+    "course_sample_pair_acquired": true,
     "patient_split_created": false,
     "ready_for_existing_2d_loader": false,
     "real_data_training_run": false

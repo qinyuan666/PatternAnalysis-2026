@@ -27,7 +27,7 @@ Student account: **s4906920**. Repository: [course fork](https://github.com/qiny
 | Synthetic training, reload and prediction | Completed for both models |
 | Local GPU resource measurements | Completed for the stated tensor configurations |
 | Original HipMRI 3D data and label dictionary | Downloaded from CSIRO; ZIP CRC passed; 211 image/mask pairs |
-| Course-preprocessed 2D data and patient mapping | Six split directories observed in the student's Rangpur terminal; files not acquired locally; patient mapping unverified |
+| Course-preprocessed 2D data and patient mapping | Use terms previewed; one 256 x 128 pair downloaded and read successfully; full dataset and patient mapping pending |
 | Real-data segmentation scores and failure cases | Not obtained |
 | Tutor discussion and check-off | Student must attend; not claimed complete |
 
@@ -62,9 +62,18 @@ global label dictionary; the default two outputs are only the software-check set
 ## Data contract and leakage controls
 
 Course data path: `/home/groups/comp3710/HipMRI_Study_open/keras_slices_data`.
-The student's terminal screenshot confirms train/validate/test directories and
-corresponding `seg` directory names. Their file format, label mapping and patient
-separation remain unverified; directory names alone do not establish a valid split.
+The student's terminal screenshots confirm train/validate/test directories and
+five matching training filename keys: `case_<id>_week_<w>_slice_<s>.nii.gz` for
+images and `seg_<id>_week_<w>_slice_<s>.nii.gz` for masks. One training pair has
+been downloaded and read by the existing `load_nifti_pair`: both arrays are
+256 x 128, finite, with matching identity affines and integer mask values 0–3.
+The header's physical units are unknown; identity affines do not establish
+millimetre spacing. This sample neither defines the global class dictionary nor
+verifies patient separation. No training manifest or real-data experiment exists.
+For this pair only, both arrays exactly match a plane from the same case/week
+in the original release after plane selection and an in-plane flip. The course
+filename's slice index differs from the matched original array index; no general
+course preprocessing rule is inferred from this single match.
 The original public release is now stored privately on the local machine; it
 contains 3D volumes rather than this course-preprocessed 2D directory. Its
 official raw labels are background 0, body 1, bones 2, bladder 3, rectum 4 and
@@ -296,6 +305,21 @@ python build_review_pdf.py
 The renderer checks that the result is exactly one A4 page. After changing the
 source, also update its embedded copy above and inspect the rendered PDF.
 
+## Data acknowledgement
+
+Data were provided by HipMRI Study via the CSIRO Data Access Portal:
+Dowling and Greer, *Labelled weekly MR images of the male pelvis* [4].
+The original release is acquired locally; the COMP3710 course-preprocessed
+slice files are being checked through the Rangpur directory described above.
+The study's acquisition publication is cited in [5], as listed in the course
+data-use notice and the official collection metadata.
+
+The observed course notice requires source acknowledgement and a relevant listed
+publication citation in public results, prohibits commercial use and attempts to
+identify or contact participants, and provides no guarantee of data correctness.
+The original release's separate CC BY-NC-ND 4.0 licence is recorded in
+[DATA_ACCESS.md](DATA_ACCESS.md). Raw data and individual filenames remain outside Git.
+
 ## Artificial Intelligence Usage Disclosure
 
 OpenAI Codex assisted with interpreting the assessment, configuring the GitHub
@@ -320,3 +344,10 @@ performance or completed tutor check-off is claimed.
    Prediction: Contribution to the BRATS 2017 Challenge*.
    https://arxiv.org/abs/1802.10508
 3. Course assessment: `COMP3710_Report_2026_draft_v2.2.pdf`, Sections 2.2 and 3.
+4. Dowling and Greer (2021). *Labelled weekly MR images of the male pelvis*.
+   CSIRO Data Access Portal, Version 2. https://doi.org/10.25919/45t8-p065
+5. Dowling et al. (2015). *Automatic Substitute Computed Tomography Generation
+   and Contouring for Magnetic Resonance Imaging (MRI)-Alone External Beam
+   Radiation Therapy From Standard MRI Sequences*. International Journal of
+   Radiation Oncology, Biology, Physics, 93(5), 1144–1153.
+   https://doi.org/10.1016/j.ijrobp.2015.08.045
