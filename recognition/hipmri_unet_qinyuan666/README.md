@@ -5,8 +5,9 @@ prostate boundary errors compared with a standard 2D U-Net at an acceptable GPU
 cost. The selected task is HipMRI segmentation, with a Normal-difficulty main
 model. A synthetic prototype and midpoint review are available. The current
 stage has acquired the official original dataset, its label documentation and
-the course 2D slice directories. Local acquisition checks pass; finalizing the
-training manifest, preprocessing and real-data experiments remains future work.
+the course 2D slice directories. The project label dictionary, private training
+manifest and aspect-preserving preprocessing are prepared. Real-data model
+training and evaluation remain future work.
 
 Student account: **s4906920**. Repository: [course fork](https://github.com/qinyuan666/PatternAnalysis-2026/tree/topic-recognition).
 
@@ -22,17 +23,20 @@ Student account: **s4906920**. Repository: [course fork](https://github.com/qiny
   label dictionary, integrity checks and the remaining course-2D questions.
 - [Course download audit](results/course_download_audit.json): all local files,
   pairing, numeric labels, shapes and filename case-group separation.
+- [Label evidence](results/label_verification.json), [manifest preparation](results/data_preparation.json)
+  and [actual input checks](results/preprocessing_check.json): the next completed preparation stage.
 
 | Item | Status |
 |---|---|
 | Baseline and main model, modular training/prediction | Implemented |
-| NIfTI loading, leakage checks, losses/metrics, checkpoint tests | 41 tests passed with artificial fixtures |
+| NIfTI loading, leakage checks, losses/metrics, checkpoint tests | 52-test regression suite passed, followed by four new manifest tests |
 | Synthetic training, reload and prediction | Completed for both models |
 | Local GPU resource measurements | Completed for the stated tensor configurations |
 | Original HipMRI 3D data and label dictionary | Downloaded from CSIRO; ZIP CRC passed; 211 image/mask pairs |
 | Course-preprocessed 2D download | 25,320 files / 12,660 pairs locally checked; filename case groups disjoint across course splits |
 | Download audit tool | Six targeted tests passed, including truncated gzip and missing-mask failures |
-| Training manifest and patient mapping | Not finalized; filename grouping is not independent patient-identity verification |
+| Project label dictionary | Official 0–5 mapping adopted; exact image/mask correspondence verified in three all-class training cases |
+| Training manifest and preprocessing | Private CSV frozen with source hashes checked; course Case groups retained; 256 x 256 padding tested on real inputs |
 | Real-data segmentation scores and failure cases | Not obtained |
 | Tutor discussion and check-off | Student must attend; not claimed complete |
 
@@ -74,7 +78,8 @@ been downloaded and read by the existing `load_nifti_pair`: both arrays are
 256 x 128, finite, with matching identity affines and integer mask values 0–3.
 The header's physical units are unknown; identity affines do not establish
 millimetre spacing. This sample neither defines the global class dictionary nor
-verifies patient separation. No training manifest or real-data experiment exists.
+verifies patient separation. This describes the initial sample check; the later
+manifest and label evidence are recorded below. No real-data model experiment exists.
 For this pair only, both arrays exactly match a plane from the same case/week
 in the original release after plane selection and an in-plane flip. The course
 filename's slice index differs from the matched original array index; no general
@@ -87,7 +92,7 @@ finite values, matching image/mask shapes and affines, and integer labels passed
 There are 12,600 pairs of shape 256 x 128 and 60 of shape 256 x 144. Observed
 mask values are 0–5; numeric values alone do not establish their anatomical
 meanings. Every affine is identity and every spatial unit is unknown. Physical
-spacing, global label semantics and final preprocessing remain unverified.
+spacing remains unverified. Subsequent label and preprocessing decisions are below.
 No remote per-file inventory or source hashes have been compared.
 
 Reproduce this read-only acquisition audit from the project directory:
@@ -102,8 +107,28 @@ or change the course splits. See [DATA_ACCESS.md](DATA_ACCESS.md) for the limits
 The original public release is now stored privately on the local machine; it
 contains 3D volumes rather than this course-preprocessed 2D directory. Its
 official raw labels are background 0, body 1, bones 2, bladder 3, rectum 4 and
-prostate 5. See [DATA_ACCESS.md](DATA_ACCESS.md) for sources and the distinction
-between the original data and the still-unverified course slice preprocessing.
+prostate 5. These values are now adopted in [labels.json](labels.json): three
+different training cases containing every class exactly matched their original
+image and mask arrays after plane selection/orientation. This supports the
+dictionary without asserting exhaustive anatomical reannotation or full
+reconstruction of the course's original preprocessing procedure.
+
+The frozen local manifest is `private_data/manifests/course_v1.csv`, with its
+SHA-256 recorded in [results/data_preparation.json](results/data_preparation.json).
+The generator rechecked all 25,320 source-file hashes against the private
+acquisition audit. It retains the course split assignments, renames `validate`
+to `val`, and uses the original pseudonymous Case identifier for `patient_id`,
+grouping all repeated weeks and slices together. This is the adopted dataset
+grouping convention, not independent verification of personal identity.
+
+To reproduce the private manifest and public aggregate report:
+
+```bash
+python prepare_course_manifest.py
+```
+
+An identical rerun leaves the manifest unchanged; different content at the same
+manifest path is rejected. Use the same CSV and label dictionary for both models.
 
 Use a private CSV with `image,mask,patient_id,split`, following the fictional
 [example](manifest.example.csv). Relative paths resolve against the CSV directory.
@@ -186,9 +211,16 @@ python profile_resources.py --model unet --device cuda --output runs/reproduce_r
 python profile_resources.py --model improved_unet --device cuda --output runs/reproduce_resource_improved_unet.json
 ```
 
-Real-data commands are in [RANGPUR.md](RANGPUR.md), because they require confirmed
-patient/label metadata and allocated resources. Do not train from the fictional
-manifest or guess anatomical label values.
+The local data inputs are ready for a separate initial baseline experiment.
+The following is a proposed **next** one-epoch run, not an experiment already run:
+
+```bash
+python train.py --model unet --manifest private_data/manifests/course_v1.csv --label-values 0 1 2 3 4 5 --prostate-label 5 --image-size 256 --resize-mode pad --batch-size 4 --epochs 1 --output runs/real_unet_pilot
+```
+
+Use a new output directory for each experiment. The initial comparison will need
+fresh six-class GPU measurements; earlier resource results used two classes.
+[RANGPUR.md](RANGPUR.md) remains available for optional remote compute.
 
 Seeds and split configurations are recorded. CUDA deterministic settings are
 requested with `warn_only=True`; this PyTorch build warns that its CUDA
@@ -198,8 +230,11 @@ runs/platforms is not guaranteed. The recorded exact agreement is specifically
 
 ## Recorded preliminary evidence
 
-The full CPU test suite passed **41 tests**, with zero failures or errors; see
-[verification record](results/verification.json). Tests use artificial fixtures.
+The historical midpoint CPU suite passed **41 tests**; see the archived
+[verification record](results/verification.json). After adding acquisition and
+padding checks, the expanded **52-test regression suite** passed; four new
+manifest tests then passed separately. Tests use artificial fixtures. Real NIfTI
+input checks (without a model run) are in [results/preprocessing_check.json](results/preprocessing_check.json).
 
 The checked-in summaries and figures below are **synthetic engineering evidence**.
 No HipMRI score has been measured. The original training implementation is

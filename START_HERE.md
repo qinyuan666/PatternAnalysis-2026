@@ -1,11 +1,11 @@
 # COMP3710 项目启动清单
 
-选题已确定：HipMRI 2D 分割，标准 2D U-Net 基线，2D Improved U-Net 主模型（Normal），账号 s4906920。中期材料和合成原型已准备。第 1 步已取得官方原始 3D 数据和课程 2D 切片，并完成本地下载检查；尚未建立训练清单或开始真实训练。tutor check-off 的完成状态尚未收到确认。
+选题已确定：HipMRI 2D 分割，标准 2D U-Net 基线，2D Improved U-Net 主模型（Normal），账号 s4906920。中期材料和合成原型已准备。数据获取、本地完整性检查、项目标签字典、训练清单和统一输入预处理已完成，尚未开始真实训练。tutor check-off 的完成状态尚未收到确认。
 
 ## 现在从这里开始
 
 1. 查看 [数据获取与本地位置](recognition/hipmri_unet_qinyuan666/DATA_ACCESS.md)：课程数据位于项目内的 `private_data/keras_slices_data/`，25,320 个文件和 12,660 对图像/标注均通过本地完整性检查。
-2. [下载检查报告](recognition/hipmri_unet_qinyuan666/results/course_download_audit.json) 显示课程三组病例编号无重叠。下一步确认全局标签语义、患者分组依据及统一尺寸预处理，再建立训练 manifest；已有 60 对切片为 `256×144`，其余为 `256×128`。
+2. [准备结果](recognition/hipmri_unet_qinyuan666/results/data_preparation.json)：项目标签字典已采用官方 `0–5` 映射（前列腺为 5），私有清单位于项目内 `private_data/manifests/course_v1.csv`。保留课程 31/4/3 个病例分组，实际输入统一补边至 `256×256`。下一项任务是单独的真实 U-Net 基线试跑。
 3. 中期材料保留在 [一页评估 PDF](recognition/hipmri_unet_qinyuan666/feasibility_review.pdf) 和 [中文讨论笔记](recognition/hipmri_unet_qinyuan666/MIDPOINT_NOTES_ZH.md)，描述当时的合成验证阶段。
 4. 完整运行方法、实验记录和 AI 披露见 [项目 README](recognition/hipmri_unet_qinyuan666/README.md)。
 
@@ -34,10 +34,11 @@
 - [x] 已收到 Rangpur 终端截图，确认六个相关目录、五组训练文件名的对应线索和可见数据使用条款；已补充来源致谢与引用。
 - [x] 已下载并检查一对课程 2D 样本：图像/标注形状及 affine 一致、数值有限、标签为整数，现有读取函数通过。
 - [x] 完整课程目录已下载，本地 gzip/NIfTI、配对、形状、affine 和有限整数标签检查通过；文件名中的病例编号跨 train/validate/test 无重叠，六项检查工具测试通过。
-- [x] 明确患者隔离、全局标签映射和拟议验收指标；真实患者划分待元数据确认。
+- [x] 采用官方标签字典并核对三个包含全部六类的训练病例；保留课程病例分组，生成哈希固定的私有 CSV，全部源文件哈希已复核。
+- [x] 实现按比例缩放与补边，真实数据在 256 输入设置下保留全部标注像素；训练/预测模式一致，旧 checkpoint 行为保留。
 - [x] 数据检查和模型流程已通过人工 NIfTI 测试与合成训练；真实数据 pilot 尚未执行。
 - [x] 准备一页可行性评估、PDF 和讨论笔记。
-- [ ] 核对课程 2D 切片的患者/周次映射、标签编号与预处理，再开展患者划分和小规模真实基线实验。
+- [ ] 进行真实 U-Net 基线试跑，测量六类别配置的损失、验证指标与 GPU 开销。
 - [ ] 本人在 practical 与 tutor 讨论，并确认 check-off 已登记。
 
 已确认路线：HipMRI 标准 2D U-Net 基线，2D Improved U-Net（Normal）主模型，并在相同患者划分上比较。项目位置：`recognition/hipmri_unet_qinyuan666/`。

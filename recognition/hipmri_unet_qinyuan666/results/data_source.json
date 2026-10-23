@@ -1,5 +1,5 @@
 {
-  "status": "original_3d_and_course_2d_downloads_locally_checked",
+  "status": "course_label_dictionary_manifest_and_input_pipeline_prepared",
   "source": {
     "title": "Labelled weekly MR images of the male pelvis",
     "publisher": "CSIRO",
@@ -63,7 +63,7 @@
     "4": "Rectum",
     "5": "Prostate"
   },
-  "label_mapping_scope": "CSIRO original release only; course keras_slices_data mapping not verified",
+  "label_mapping_scope": "Project mapping adopted from the official original description and exact all-class image/mask matches in three distinct training cases; not exhaustive anatomical reannotation.",
   "description_sha256": "dc3a99204684ced859872d79a75707af3c0ad31d00f5f3213063ce5e30727ee6",
   "sample_check": {
     "pairs_checked": 3,
@@ -94,7 +94,8 @@
     "extracted_volumes": "private_data/hipmri_csiro_v2",
     "description": "private_data/source_metadata/BriefDataDescription_v2.txt",
     "course_sample": "private_data/course_sample",
-    "course_slices": "private_data/keras_slices_data"
+    "course_slices": "private_data/keras_slices_data",
+    "training_manifest": "private_data/manifests/course_v1.csv"
   },
   "rangpur_access": {
     "student_reported_successful_login": true,
@@ -125,7 +126,11 @@
       "image_pattern": "case_<case_id>_week_<week>_slice_<slice>.nii.gz",
       "mask_pattern": "seg_<case_id>_week_<week>_slice_<slice>.nii.gz",
       "matching_name_keys_observed": 5,
-      "candidate_pair_key": ["case_id", "week", "slice"],
+      "candidate_pair_key": [
+        "case_id",
+        "week",
+        "slice"
+      ],
       "pairs_with_nifti_contents_checked": 1,
       "patient_identity_mapping_verified": false
     },
@@ -148,8 +153,14 @@
   "course_sample_check": {
     "scope": "one user-transferred training pair, not a full course dataset audit",
     "pairs_checked": 1,
-    "image_shape": [256, 128],
-    "mask_shape": [256, 128],
+    "image_shape": [
+      256,
+      128
+    ],
+    "mask_shape": [
+      256,
+      128
+    ],
     "image_dtype": "float32",
     "mask_dtype": "uint8",
     "image_mask_shapes_match": true,
@@ -159,7 +170,12 @@
     "physical_spacing_verified": false,
     "images_and_masks_finite": true,
     "mask_integer": true,
-    "observed_mask_values": [0, 1, 2, 3],
+    "observed_mask_values": [
+      0,
+      1,
+      2,
+      3
+    ],
     "observed_values_are_not_a_global_class_dictionary": true,
     "existing_load_nifti_pair_passed": true,
     "original_volume_comparison": {
@@ -173,7 +189,10 @@
   },
   "course_acquisition": {
     "user_reported_transfer_complete": true,
-    "transfer_methods": ["scp", "sftp_recursive_resume"],
+    "transfer_methods": [
+      "scp",
+      "sftp_recursive_resume"
+    ],
     "server_du_output_reported": "795M; allocated space, not an exact file-byte inventory",
     "local_check_date_australia_brisbane": "2026-10-24",
     "local_integrity_passed": true,
@@ -197,8 +216,20 @@
     "course_preprocessed_2d_acquired_scope": "six course directories locally present and checked; no server file-manifest comparison",
     "course_sample_pair_acquired": true,
     "patient_split_created": false,
-    "ready_for_existing_2d_loader": false,
-    "reason_not_training_ready": "Explicit training manifest, global course-label semantics and preprocessing decisions remain pending.",
-    "real_data_training_run": false
+    "ready_for_existing_2d_loader": true,
+    "real_data_training_run": false,
+    "course_split_manifest_created": true,
+    "split_policy": "Existing course splits preserved; no new random patient split created.",
+    "project_label_dictionary_adopted": true,
+    "ready_for_initial_training_pilot": true
+  },
+  "preparation": {
+    "label_dictionary": "labels.json",
+    "label_evidence": "results/label_verification.json",
+    "manifest_report": "results/data_preparation.json",
+    "input_check": "results/preprocessing_check.json",
+    "input_size": 256,
+    "resize_mode": "pad",
+    "prostate_raw_label": 5
   }
 }
