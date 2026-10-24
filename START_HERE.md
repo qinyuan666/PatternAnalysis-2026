@@ -1,11 +1,11 @@
 # COMP3710 项目启动清单
 
-选题已确定：HipMRI 2D 分割，标准 2D U-Net 基线，2D Improved U-Net 主模型（Normal），账号 s4906920。数据准备、本机一轮真实 U-Net 训练及按 Case 验证已完成，权重重载和预测输出已检查。正式模型比较与最终测试评估尚未完成。tutor check-off 的完成状态尚未收到确认。
+选题已确定：HipMRI 2D 分割，标准 2D U-Net 基线，2D Improved U-Net 主模型（Normal），账号 s4906920。数据准备、单轮 pilot、20 epoch 正式 U-Net 基线及按 Case 验证已完成，权重重载和预测输出已检查。Improved U-Net 真实训练、两模型比较与最终测试评估尚未完成。tutor check-off 的完成状态尚未收到确认。
 
 ## 现在从这里开始
 
 1. 查看 [数据获取与本地位置](recognition/hipmri_unet_qinyuan666/DATA_ACCESS.md)：课程数据位于项目内的 `private_data/keras_slices_data/`，25,320 个文件和 12,660 对图像/标注均通过本地完整性检查。
-2. [正式训练计划与病例结果](recognition/hipmri_unet_qinyuan666/TRAINING_PLAN.md)：单轮基线的验证集前列腺像素汇总 Dice 为 0.7244，4 个 Case 等权平均为 0.7044。下一步执行固定 20 epoch 基线训练，再做 Improved U-Net 试跑及匹配的正式实验；长训练尚未执行。
+2. [正式基线报告](recognition/hipmri_unet_qinyuan666/FORMAL_UNET.md)：20 epoch 已完成，按验证 loss 选中第 5 轮；验证集前列腺像素汇总 Dice 为 0.8291，4 个 Case 等权平均为 0.8090。下一步按 [训练计划](recognition/hipmri_unet_qinyuan666/TRAINING_PLAN.md) 做 Improved U-Net 真实试跑及匹配的正式实验；尚未评估测试集。
 3. 中期材料保留在 [一页评估 PDF](recognition/hipmri_unet_qinyuan666/feasibility_review.pdf) 和 [中文讨论笔记](recognition/hipmri_unet_qinyuan666/MIDPOINT_NOTES_ZH.md)，描述当时的合成验证阶段。
 4. 完整运行方法、实验记录和 AI 披露见 [项目 README](recognition/hipmri_unet_qinyuan666/README.md)。
 
@@ -40,7 +40,8 @@
 - [x] 准备一页可行性评估、PDF 和讨论笔记。
 - [x] 完成真实 U-Net 基线试跑，测量六类别配置的损失、验证指标与 GPU 开销，检查权重重载和预测输出。
 - [x] 完成按 Case 汇总的验证指标，固定两模型各 20 epoch 的正式训练预算。
-- [ ] 执行正式基线训练、Improved U-Net 容量试跑与正式训练，比较两模型。
+- [x] 完成正式基线 20 epoch 训练、最佳权重重载、全部验证切片的 Case 评估及阳性切片示例检查。
+- [ ] 执行 Improved U-Net 容量试跑与正式训练，比较两模型。
 - [ ] 本人在 practical 与 tutor 讨论，并确认 check-off 已登记。
 
 已确认路线：HipMRI 标准 2D U-Net 基线，2D Improved U-Net（Normal）主模型，并在相同患者划分上比较。项目位置：`recognition/hipmri_unet_qinyuan666/`。

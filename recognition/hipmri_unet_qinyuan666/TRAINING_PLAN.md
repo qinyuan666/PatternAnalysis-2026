@@ -1,7 +1,8 @@
 # 正式训练预算与验证规则
 
-本计划在单轮 U-Net pilot 和按 Case 验证后确定。**下列 20 epoch 实验尚未执行。**
-本次新增的是病例评估工具及真实验证结果，没有继续更新模型权重。
+本计划在单轮 U-Net pilot 和按 Case 验证后确定。**U-Net 的 20 epoch 实验已完成，Improved U-Net 尚未执行。**
+正式基线按最低验证 loss 选中第 5 轮，验证集前列腺像素汇总 Dice 为 0.8291、Case 等权平均为 0.8090，
+实际训练计时为 51.70 分钟。完整结果见 [正式基线报告](FORMAL_UNET.md)。下文保留实验开始前确定的设置与 pilot 依据。
 
 ## 为什么继续训练
 
@@ -51,12 +52,12 @@
 尚未测量，先做独立的容量/耗时试跑，再从头开始其正式 20 轮实验。
 不能直接把此前两类合成资源测试当作真实六类实验耗时。
 
-## 下次执行命令
+## 复现与下一阶段命令
 
 在本项目目录、已激活项目 Python 环境的终端逐条执行；每次使用全新的输出目录。
 本机已完成基线 GPU 运行，当前不需要 Rangpur。
 
-基线正式训练：
+基线正式训练已完成。以下是原实验命令；复现时将输出改为新目录，例如 `runs/real_unet_20ep_s3710_reproduce`：
 
 ```bash
 python train.py --model unet --manifest private_data/manifests/course_v1.csv --label-values 0 1 2 3 4 5 --prostate-label 5 --image-size 256 --resize-mode pad --base-channels 16 --batch-size 4 --epochs 20 --lr 0.001 --seed 3710 --device cuda --output runs/real_unet_20ep_s3710
@@ -80,5 +81,5 @@ Improved U-Net 先做独立的一轮试跑，输出至 `runs/real_improved_unet_
 人工 NIfTI 测试包含不存在的 train/test 文件，验证评估工具没有读取这些图像。
 新工具只提供验证集模式；病例、周次元数据仍来自固定清单，未据指标重新划分数据。
 
-下一步按本计划完成基线长训练，之后再完成 Improved U-Net 试跑和正式训练。
+基线长训练与所选权重的病例验证已完成；下一步完成 Improved U-Net 试跑和正式训练。
 最终还需两模型资源比较、边界分析与 3–5 个真实失败案例；未知物理单位不能当成毫米报告。

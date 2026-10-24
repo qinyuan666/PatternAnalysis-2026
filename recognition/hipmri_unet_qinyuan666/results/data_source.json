@@ -1,5 +1,5 @@
 {
-  "status": "real_unet_pilot_and_case_validation_completed",
+  "status": "formal_unet_20_epoch_training_and_case_validation_completed",
   "source": {
     "title": "Labelled weekly MR images of the male pelvis",
     "publisher": "CSIRO",
@@ -235,6 +235,19 @@
     "real_improved_unet_comparison_completed": false,
     "patient_level_evaluation_scope": "Validation only; equal-weight manifest Case groups after pooling all slices and weeks. Not final test evaluation.",
     "case_validation_summary": "results/pilot_unet_cases.json"
+  },
+  "formal_unet": {
+    "epochs_completed": 20,
+    "selected_epoch": 5,
+    "selection_rule": "Minimum validation CE plus foreground soft Dice loss",
+    "summary": "results/formal_unet.json",
+    "case_validation_summary": "results/formal_unet_cases.json",
+    "notes": "FORMAL_UNET.md",
+    "checkpoint_reload_exact": true,
+    "case_confusions_reproduce_pooled_validation_scores": true,
+    "validation_positive_examples_checked": 4,
+    "test_set_model_evaluation_performed": false,
+    "real_improved_unet_comparison_completed": false
   },
   "preparation": {
     "label_dictionary": "labels.json",

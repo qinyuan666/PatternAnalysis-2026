@@ -6,8 +6,9 @@ cost. The selected task is HipMRI segmentation, with a Normal-difficulty main
 model. A synthetic prototype and midpoint review are available. The current
 stage has acquired the official original dataset, its label documentation and
 the course 2D slice directories. The project label dictionary, private training
-manifest and aspect-preserving preprocessing are prepared. A one-epoch real-data
-U-Net pilot has completed on the local GPU. Full training, the real-data model
+manifest and aspect-preserving preprocessing are prepared. The local GPU has
+completed a one-epoch pilot and a fresh 20-epoch U-Net baseline, with Case-level
+validation and prediction checks. Improved U-Net real-data training, the model
 comparison and final test evaluation remain future work.
 
 Student account: **s4906920**. Repository: [course fork](https://github.com/qinyuan666/PatternAnalysis-2026/tree/topic-recognition).
@@ -28,6 +29,8 @@ Student account: **s4906920**. Repository: [course fork](https://github.com/qiny
   and [actual input checks](results/preprocessing_check.json): the next completed preparation stage.
 - [Real-data pilot notes (Chinese)](REAL_DATA_PILOT.md) and [aggregate results](results/pilot_unet.json):
   one complete U-Net training epoch, validation, checkpoint reload and prediction.
+- [Formal U-Net report (Chinese)](FORMAL_UNET.md): completed 20-epoch baseline,
+  selected epoch 5, full curves and Case-level validation.
 
 | Item | Status |
 |---|---|
@@ -41,13 +44,14 @@ Student account: **s4906920**. Repository: [course fork](https://github.com/qiny
 | Project label dictionary | Official 0–5 mapping adopted; exact image/mask correspondence verified in three all-class training cases |
 | Training manifest and preprocessing | Private CSV frozen with source hashes checked; course Case groups retained; 256 x 256 padding tested on real inputs |
 | Real-data U-Net pilot | One epoch completed; pooled validation prostate Dice 0.7244; reload and four example predictions checked |
-| Case-level validation | Four Cases evaluated; equal-Case mean prostate Dice 0.7044; five evaluator tests passed |
+| Case-level validation | Five evaluator tests passed; pilot mean prostate Dice 0.7044, formal baseline 0.8090 |
+| Formal U-Net baseline | 20 epochs completed; epoch 5 selected by validation loss; pooled prostate Dice 0.8291 |
 | Full model comparison, test scores and failure cases | Not completed |
 | Tutor discussion and check-off | Student must attend; not claimed complete |
 
 The task permits preliminary resource evidence for the midpoint. The review below
 records the earlier synthetic-prototype stage; the data-source update is in
-[results/data_source.json](results/data_source.json). The later real-data pilot is
+[results/data_source.json](results/data_source.json). The later real-data experiments are
 reported separately; completed final assessment or clinical validity is not claimed.
 
 ## Problem and model choices
@@ -235,6 +239,30 @@ runs/platforms is not guaranteed. The recorded exact agreement is specifically
 
 ## Recorded preliminary evidence
 
+The **20-epoch formal U-Net baseline** is complete. Under the fixed plan, epoch 5
+had the lowest validation loss (0.4174); epoch 20 loss was 0.4392. The selected
+checkpoint achieved validation prostate Dice/IoU **0.8291 / 0.7081** when pooling
+pixels, and equal-Case mean prostate Dice **0.8090** (four Cases, range
+**0.7586–0.8666**). Foreground macro Dice was **0.9061**. These are validation
+results; the test-set target remains unassessed. Later epochs did not improve the
+selection loss, so additional training was not continuously beneficial.
+
+Training, per-epoch validation and checkpoint saving took **51.70 minutes**.
+Peak PyTorch allocator usage was **0.296 GiB allocated / 0.420 GiB reserved**;
+batch-one model-only median inference was **2.000 ms**. Timings exclude initial
+validation and final reload/inference checks where specified, and GPU clock/power
+varied during this laptop run. They are not controlled cross-model benchmarks or
+per-Case inference timings. Reload was exact; independently recomputed Case
+confusions reproduce the recorded pooled validation metrics exactly.
+
+See [formal report and local output paths](FORMAL_UNET.md),
+[full epoch history](results/formal_unet.json), [Case scores](results/formal_unet_cases.json)
+and [training curves](figures/real_unet_20ep_curves.png). Four local prostate-positive
+examples were selected by median ground-truth area within each validation Case,
+not by prediction quality; these are illustrations, not the final failure-case analysis.
+
+The records below retain the preceding pilot and synthetic checks as historical evidence.
+
 The historical midpoint CPU suite passed **41 tests**; see the archived
 [verification record](results/verification.json). After adding acquisition and
 padding checks, the expanded **52-test regression suite** passed; four new
@@ -334,8 +362,8 @@ and validation. These are illustration examples, not clinical failure cases:
 ![Synthetic baseline prediction examples](figures/synthetic_predictions_unet.png)
 ![Synthetic improved-model prediction examples](figures/synthetic_predictions_improved_unet.png)
 
-**Current recommendation:** execute the fixed longer baseline training budget in
-[TRAINING_PLAN.md](TRAINING_PLAN.md), then compare Improved U-Net under matched settings.
+**Current recommendation:** run the real-data Improved U-Net capacity/timing pilot,
+then its fresh 20-epoch experiment under the matched settings in [TRAINING_PLAN.md](TRAINING_PLAN.md).
 The real baseline fits the local GPU and completes training, reload and prediction.
 There is no evidence yet that the improved model benefits real prostate
 boundaries. A final recommendation requires matched patient splits, actual
@@ -455,13 +483,15 @@ Architecture choices were checked against the primary papers. Verification
 includes patient/label checks, artificial NIfTI integration tests for both models,
 loss/metric edge cases, finite gradients, checkpoint reloads, manifest integrity,
 measured synthetic runs and a rendered one-page PDF inspection. Codex also assisted
-with the one-epoch real-data baseline run, validation summaries and prediction checks.
+with the one-epoch pilot, the 20-epoch real-data baseline, Case validation, result
+summaries and prediction checks. Training completed with finite-loss/gradient guards;
+the selected checkpoint reloaded exactly and Case aggregates matched pooled metrics.
 
 The student must personally understand and review the code, verify real-data
 metadata and results, and accurately maintain this disclosure. Automated tests
 do not replace that responsibility. No copied student/prior-year PR code is used;
 architectural sources are cited below and in model docstrings. Real-data evidence
-is limited to the documented baseline pilot; final evaluation, clinical validity
+is limited to the documented baseline validation experiments; final test evaluation, clinical validity
 and completed tutor check-off are not claimed.
 
 ## References
