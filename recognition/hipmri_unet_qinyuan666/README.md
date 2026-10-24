@@ -41,7 +41,8 @@ Student account: **s4906920**. Repository: [course fork](https://github.com/qiny
 | Project label dictionary | Official 0–5 mapping adopted; exact image/mask correspondence verified in three all-class training cases |
 | Training manifest and preprocessing | Private CSV frozen with source hashes checked; course Case groups retained; 256 x 256 padding tested on real inputs |
 | Real-data U-Net pilot | One epoch completed; pooled validation prostate Dice 0.7244; reload and four example predictions checked |
-| Full model comparison, patient-level scores and failure cases | Not completed |
+| Case-level validation | Four Cases evaluated; equal-Case mean prostate Dice 0.7044; five evaluator tests passed |
+| Full model comparison, test scores and failure cases | Not completed |
 | Tutor discussion and check-off | Student must attend; not claimed complete |
 
 The task permits preliminary resource evidence for the midpoint. The review below
@@ -260,6 +261,31 @@ examples contain no prostate in either truth or prediction, so their example Dic
 is undefined; the aggregate prostate score above uses the complete validation set.
 No test-set model evaluation was performed.
 
+The validation-only [Case evaluator](evaluate_cases.py) pools confusion counts
+within each manifest Case across all its weeks and slices, then averages defined
+Case scores equally. Both-empty classes are undefined and excluded with counts
+reported; one-empty classes score zero. Five targeted tests cover weighting,
+empty classes, provenance, output preservation and actual NIfTI validation-only I/O;
+the nine existing metric tests also pass.
+
+```bash
+python evaluate_cases.py --checkpoint runs/real_unet_pilot/best.pt --manifest private_data/manifests/course_v1.csv --output runs/real_unet_pilot/case_validation_reproduce --device cuda --batch-size 4
+```
+
+Use a new output directory. It contains `summary.json` with anonymous Case aliases
+and `case_details_private.json` with original Case identifiers and confusion counts;
+keep the latter under ignored `runs/`. The checkpoint fixes the label mapping and
+preprocessing, and a changed manifest is rejected. This command offers no test-set mode.
+
+For this pilot, all four validation Cases have defined prostate scores. Their
+equal-Case mean Dice is **0.7044** (range **0.6366–0.7938**), compared with pooled
+Dice **0.7244**. One Case has 480 slices and the other three have 60 each, so the
+two aggregations weight the data differently. Recomputed pooled metrics match
+the original pilot exactly. These are validation results, not final test evidence;
+Case grouping follows the dataset convention and weeks are not averaged separately.
+See [Case results](results/pilot_unet_cases.json) and the
+[fixed next-stage experiment plan](TRAINING_PLAN.md).
+
 The remaining summaries and figures in this section are historical **synthetic engineering evidence**.
 The original training implementation is
 identified in each archived summary's provenance.
@@ -302,8 +328,8 @@ and validation. These are illustration examples, not clinical failure cases:
 ![Synthetic baseline prediction examples](figures/synthetic_predictions_unet.png)
 ![Synthetic improved-model prediction examples](figures/synthetic_predictions_improved_unet.png)
 
-**Current recommendation:** plan a fixed longer baseline training budget and add
-Case-level validation, then compare Improved U-Net under matched settings.
+**Current recommendation:** execute the fixed longer baseline training budget in
+[TRAINING_PLAN.md](TRAINING_PLAN.md), then compare Improved U-Net under matched settings.
 The real baseline fits the local GPU and completes training, reload and prediction.
 There is no evidence yet that the improved model benefits real prostate
 boundaries. A final recommendation requires matched patient splits, actual
