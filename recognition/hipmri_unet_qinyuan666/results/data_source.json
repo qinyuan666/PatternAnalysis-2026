@@ -1,5 +1,5 @@
 {
-  "status": "formal_unet_20_epoch_training_and_case_validation_completed",
+  "status": "formal_unet_and_improved_unet_pilot_validation_completed",
   "source": {
     "title": "Labelled weekly MR images of the male pelvis",
     "publisher": "CSIRO",
@@ -248,6 +248,19 @@
     "validation_positive_examples_checked": 4,
     "test_set_model_evaluation_performed": false,
     "real_improved_unet_comparison_completed": false
+  },
+  "real_improved_unet_pilot": {
+    "epochs_completed": 1,
+    "summary": "results/pilot_improved_unet.json",
+    "case_validation_summary": "results/pilot_improved_unet_cases.json",
+    "notes": "IMPROVED_UNET_PILOT.md",
+    "checkpoint_reload_exact": true,
+    "case_confusions_reproduce_pooled_validation_scores": true,
+    "validation_positive_examples_checked": 4,
+    "same_example_selection_as_formal_baseline": true,
+    "matched_baseline_pilot_configuration_verified": true,
+    "formal_20_epoch_run_completed": false,
+    "test_set_model_evaluation_performed": false
   },
   "preparation": {
     "label_dictionary": "labels.json",

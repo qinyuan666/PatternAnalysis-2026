@@ -1,8 +1,12 @@
 # 正式训练预算与验证规则
 
-本计划在单轮 U-Net pilot 和按 Case 验证后确定。**U-Net 的 20 epoch 实验已完成，Improved U-Net 尚未执行。**
+本计划在单轮 U-Net pilot 和按 Case 验证后确定。**U-Net 的 20 epoch 实验和 Improved U-Net 单轮试跑已完成；Improved U-Net 的 20 epoch 实验尚未执行。**
 正式基线按最低验证 loss 选中第 5 轮，验证集前列腺像素汇总 Dice 为 0.8291、Case 等权平均为 0.8090，
 实际训练计时为 51.70 分钟。完整结果见 [正式基线报告](FORMAL_UNET.md)。下文保留实验开始前确定的设置与 pilot 依据。
+
+[Improved U-Net 试跑](IMPROVED_UNET_PILOT.md) 已确认本机能训练六类配置：单轮 451.92 秒，
+验证前列腺像素汇总 Dice 0.7919、Case 等权平均 0.7625。正式 20 轮预计约 151 分钟（2.5 小时），
+为单次观测的线性估计，不是完成时间保证。训练与正式测速期间宜避免同时运行游戏，以减少资源争用。
 
 ## 为什么继续训练
 
@@ -48,8 +52,8 @@
 如后续调整预算、学习率或增强，应作为另一个明确记录的实验，不能覆盖这组结果。
 
 基线 pilot 每轮训练、验证及保存约 129.56 秒，线性估计 20 轮约 **43 分钟**；
-这只是规划值，实际受设备负载、散热和 I/O 影响。Improved U-Net 的真实六类单轮时间
-尚未测量，先做独立的容量/耗时试跑，再从头开始其正式 20 轮实验。
+这只是原规划值，实际受设备负载、散热和 I/O 影响；基线正式运行实际为 51.70 分钟。
+Improved U-Net 的真实六类单轮耗时现已测得 451.92 秒，后续仍需从头开始正式 20 轮实验。
 不能直接把此前两类合成资源测试当作真实六类实验耗时。
 
 ## 复现与下一阶段命令
@@ -69,9 +73,16 @@ python train.py --model unet --manifest private_data/manifests/course_v1.csv --l
 python evaluate_cases.py --checkpoint runs/real_unet_20ep_s3710/best.pt --manifest private_data/manifests/course_v1.csv --output runs/real_unet_20ep_s3710/case_validation --device cuda --batch-size 4
 ```
 
-Improved U-Net 先做独立的一轮试跑，输出至 `runs/real_improved_unet_pilot`；
-确认能正常训练后，正式实验使用相同设置，将 `--model` 改为 `improved_unet`，
-输出改为 `runs/real_improved_unet_20ep_s3710`，并对该实验的 best.pt 运行同一个病例评估工具。
+Improved U-Net 独立的一轮试跑已完成，输出位于 `runs/real_improved_unet_pilot`。
+下一步正式实验从头训练，不加载 pilot 权重：
+
+```bash
+python train.py --model improved_unet --manifest private_data/manifests/course_v1.csv --label-values 0 1 2 3 4 5 --prostate-label 5 --image-size 256 --resize-mode pad --base-channels 16 --batch-size 4 --epochs 20 --lr 0.001 --seed 3710 --device cuda --output runs/real_improved_unet_20ep_s3710
+```
+
+```bash
+python evaluate_cases.py --checkpoint runs/real_improved_unet_20ep_s3710/best.pt --manifest private_data/manifests/course_v1.csv --output runs/real_improved_unet_20ep_s3710/case_validation --device cuda --batch-size 4
+```
 同 seed 不保证两架构初始化相同；PyTorch 已提示部分 CUDA 运算非确定性。
 
 ## 本阶段验证范围
@@ -81,5 +92,5 @@ Improved U-Net 先做独立的一轮试跑，输出至 `runs/real_improved_unet_
 人工 NIfTI 测试包含不存在的 train/test 文件，验证评估工具没有读取这些图像。
 新工具只提供验证集模式；病例、周次元数据仍来自固定清单，未据指标重新划分数据。
 
-基线长训练与所选权重的病例验证已完成；下一步完成 Improved U-Net 试跑和正式训练。
+基线长训练、Improved U-Net 单轮试跑及两者的病例验证已完成；下一步完成 Improved U-Net 正式长训练。
 最终还需两模型资源比较、边界分析与 3–5 个真实失败案例；未知物理单位不能当成毫米报告。

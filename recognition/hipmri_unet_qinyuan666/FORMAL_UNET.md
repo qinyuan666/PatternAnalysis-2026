@@ -83,7 +83,8 @@ base channels 16、batch size 4、Adam 0.001、seed 3710、float32，不启用�
 
 ## 后续工作
 
-接下来先对 Improved U-Net 做真实六类容量/耗时试跑，然后按相同预算从头训练 20 epochs。
+后续已完成 [Improved U-Net 真实六类试跑](IMPROVED_UNET_PILOT.md)。下一步按相同预算从头训练 20 epochs，
+其长训练尚未执行；不能用单轮结果和本页 20 轮预算结果作最终架构比较。
 最终还需要两模型在固定测试集上的各类 Dice/IoU、整病例推理耗时、边界精度和 3–5 个失败案例。
 物理空间单位仍未知，边界距离不可直接报告成毫米。
 数据致谢与参考文献见 [README](README.md#data-acknowledgement)。
