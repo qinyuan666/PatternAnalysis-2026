@@ -9,6 +9,10 @@
 3. 中期材料保留在 [一页评估 PDF](recognition/hipmri_unet_qinyuan666/feasibility_review.pdf) 和 [中文讨论笔记](recognition/hipmri_unet_qinyuan666/MIDPOINT_NOTES_ZH.md)，描述当时的合成验证阶段。
 4. 完整运行方法、实验记录和 AI 披露见 [项目 README](recognition/hipmri_unet_qinyuan666/README.md)。
 
+当前 Improved U-Net 正式训练已在本机后台启动，尚未完成；
+[查看日志与状态](recognition/hipmri_unet_qinyuan666/TRAINING_PLAN.md#当前后台任务)。
+训练成功后脚本自动评估验证集，无需重复启动或持续聊天监控。
+
 ## 仓库
 
 - 工作仓库 / 课程 Fork（`origin`）：https://github.com/qinyuan666/PatternAnalysis-2026.git
@@ -42,7 +46,7 @@
 - [x] 完成按 Case 汇总的验证指标，固定两模型各 20 epoch 的正式训练预算。
 - [x] 完成正式基线 20 epoch 训练、最佳权重重载、全部验证切片的 Case 评估及阳性切片示例检查。
 - [x] 完成 Improved U-Net 真实六类单轮试跑、资源测量、权重重载与病例评估。
-- [ ] 从头执行 Improved U-Net 20 epoch 正式训练，再比较两模型。
+- [ ] Improved U-Net 20 epoch 正式训练已后台启动，等待完成并核对验证结果，再比较两模型。
 - [ ] 本人在 practical 与 tutor 讨论，并确认 check-off 已登记。
 
 已确认路线：HipMRI 标准 2D U-Net 基线，2D Improved U-Net（Normal）主模型，并在相同患者划分上比较。项目位置：`recognition/hipmri_unet_qinyuan666/`。

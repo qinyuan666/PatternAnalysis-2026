@@ -1,12 +1,44 @@
 # 正式训练预算与验证规则
 
-本计划在单轮 U-Net pilot 和按 Case 验证后确定。**U-Net 的 20 epoch 实验和 Improved U-Net 单轮试跑已完成；Improved U-Net 的 20 epoch 实验尚未执行。**
+本计划在单轮 U-Net pilot 和按 Case 验证后确定。**U-Net 的 20 epoch 实验和 Improved U-Net 单轮试跑已完成；Improved U-Net 的 20 epoch 实验已在本机后台启动，尚未确认完成。**
 正式基线按最低验证 loss 选中第 5 轮，验证集前列腺像素汇总 Dice 为 0.8291、Case 等权平均为 0.8090，
 实际训练计时为 51.70 分钟。完整结果见 [正式基线报告](FORMAL_UNET.md)。下文保留实验开始前确定的设置与 pilot 依据。
 
 [Improved U-Net 试跑](IMPROVED_UNET_PILOT.md) 已确认本机能训练六类配置：单轮 451.92 秒，
 验证前列腺像素汇总 Dice 0.7919、Case 等权平均 0.7625。正式 20 轮预计约 151 分钟（2.5 小时），
 为单次观测的线性估计，不是完成时间保证。训练与正式测速期间宜避免同时运行游戏，以减少资源争用。
+
+## 当前后台任务
+
+已启动 [run_improved_experiment.py](run_improved_experiment.py)，不要重复运行训练命令。
+脚本按下方固定设置从头训练 20 epochs，成功后自动运行验证集 Case 评估；不评估测试集。
+三个编排测试通过：拒绝覆盖已有目录、训练失败后不继续评估、验证结束后才标记完成。
+训练完成后再核对结果和提交报告；启动不等于已完成，此方式无需聊天持续轮询。
+
+本机 PowerShell 查看状态与最新训练日志：
+
+```powershell
+cd C:\Users\ROG\Desktop\Final\recognition\hipmri_unet_qinyuan666
+Get-Content .\runs\real_improved_unet_20ep_s3710\status.json
+Get-Content .\runs\real_improved_unet_20ep_s3710\training.log -Tail 5 -Wait
+```
+
+日志每完成一轮才增加指标，第一轮需要几分钟。`Ctrl+C` 只退出上述日志查看，不停止后台训练。
+状态依次为 `training`、`evaluating`、`completed`；异常时为 `failed`。
+状态只在阶段切换时更新，不是逐秒心跳。训练错误/警告在 `training_stderr.log`，
+验证日志在 `evaluating.log` / `evaluating_stderr.log`；源码和清单哈希在 `launch_provenance.json`。
+这些文件均在被 Git 忽略的实验目录内。
+
+如怀疑进程已停止，结合状态中的 `wrapper_pid` 检查：
+
+```powershell
+$runStatus = Get-Content .\runs\real_improved_unet_20ep_s3710\status.json | ConvertFrom-Json
+Get-Process -Id $runStatus.wrapper_pid -ErrorAction SilentlyContinue
+```
+
+保持电脑开机、接电且不睡眠，尽量不同时打游戏。强制结束或关机可能来不及更新状态；
+脚本不会自动重启或恢复训练，重新运行会拒绝已有目录。
+另行复现时指定新目录：`python run_improved_experiment.py --output runs/improved_reproduce`。
 
 ## 为什么继续训练
 

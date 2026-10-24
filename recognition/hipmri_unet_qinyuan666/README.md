@@ -9,8 +9,9 @@ the course 2D slice directories. The project label dictionary, private training
 manifest and aspect-preserving preprocessing are prepared. The local GPU has
 completed a one-epoch pilot and a fresh 20-epoch U-Net baseline, with Case-level
 validation and prediction checks. Improved U-Net has also completed a one-epoch
-real-data capacity/stability pilot. Its 20-epoch training, the final model comparison
-and test evaluation remain future work.
+real-data capacity/stability pilot. Its 20-epoch training is now running locally
+in the background; completion and results are not yet verified. The final model
+comparison and test evaluation remain future work.
 
 Student account: **s4906920**. Repository: [course fork](https://github.com/qinyuan666/PatternAnalysis-2026/tree/topic-recognition).
 
@@ -49,7 +50,8 @@ Student account: **s4906920**. Repository: [course fork](https://github.com/qiny
 | Real-data U-Net pilot | One epoch completed; pooled validation prostate Dice 0.7244; reload and four example predictions checked |
 | Case-level validation | Five evaluator tests passed; pilot mean prostate Dice 0.7044, formal baseline 0.8090 |
 | Formal U-Net baseline | 20 epochs completed; epoch 5 selected by validation loss; pooled prostate Dice 0.8291 |
-| Improved U-Net real-data pilot | One epoch completed; pooled prostate Dice 0.7919, equal-Case mean 0.7625; 20-epoch run pending |
+| Improved U-Net real-data pilot | One epoch completed; pooled prostate Dice 0.7919, equal-Case mean 0.7625 |
+| Improved U-Net formal training | Background 20-epoch run launched; completion not yet verified |
 | Full model comparison, test scores and failure cases | Not completed |
 | Tutor discussion and check-off | Student must attend; not claimed complete |
 
@@ -389,8 +391,14 @@ and validation. These are illustration examples, not clinical failure cases:
 ![Synthetic baseline prediction examples](figures/synthetic_predictions_unet.png)
 ![Synthetic improved-model prediction examples](figures/synthetic_predictions_improved_unet.png)
 
-**Current recommendation:** run the fresh Improved U-Net 20-epoch experiment under
-the matched settings in [TRAINING_PLAN.md](TRAINING_PLAN.md). Its real-data pilot has passed.
+**Current next step:** let the launched Improved U-Net 20-epoch experiment finish,
+then verify and publish its validation results. See [TRAINING_PLAN.md](TRAINING_PLAN.md)
+for background status/log commands. Do not launch a duplicate run.
+
+The [background runner](run_improved_experiment.py) preserves the fixed configuration,
+records source/manifest hashes, logs each subprocess and evaluates validation only
+after training succeeds. It refuses an existing output directory and records failures;
+it does not implement checkpoint resume. Three targeted orchestration tests passed.
 The real baseline fits the local GPU and completes training, reload and prediction.
 There is no evidence yet that the improved model benefits real prostate
 boundaries. A final recommendation requires matched patient splits, actual
