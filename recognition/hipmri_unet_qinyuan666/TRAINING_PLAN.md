@@ -1,0 +1,82 @@
+# 正式训练预算与验证规则
+
+本计划在单轮 U-Net pilot 和按 Case 验证后确定。**下列 20 epoch 实验尚未执行。**
+本次新增的是病例评估工具及真实验证结果，没有继续更新模型权重。
+
+## 为什么继续训练
+
+单轮模型在 4 个验证 Case 上的前列腺结果如下。别名仅用于本次报告，
+原始病例编号与混淆矩阵保存在本机 `runs/real_unet_pilot/case_validation/case_details_private.json`。
+
+| 验证 Case | 切片数 | 前列腺 Dice | 前列腺 IoU |
+|---|---:|---:|---:|
+| Case 01 | 60 | 0.7938 | 0.6581 |
+| Case 02 | 60 | 0.6366 | 0.4669 |
+| Case 03 | 60 | 0.6474 | 0.4786 |
+| Case 04 | 480 | 0.7397 | 0.5869 |
+
+按 Case 等权平均 Dice 为 **0.7044**，总体标准差 **0.0654**，没有 undefined 病例。
+先将全部切片像素汇总的 Dice 为 **0.7244**。前者给每个 Case 相同权重；
+后者由累计像素交并数量决定，含更多切片或目标像素的 Case 影响更大。
+每个 Case 内的所有周次一起累计，不是先按扫描或切片求平均，也没有重建 3D 物理体积。
+数据分组依据与限制见 [数据记录](DATA_ACCESS.md)。
+
+目前只有一轮训练，无法判断是否收敛，也不能据验证集结果声称达到最终测试要求。
+完整数值及来源哈希见 [病例评估汇总](results/pilot_unet_cases.json)。
+
+## 固定实验设置
+
+| 项目 | 下一阶段设置 |
+|---|---|
+| 比较 | 标准 U-Net 与 Improved U-Net，各从头训练 20 epochs |
+| 数据 | 同一 `course_v1.csv`；保留课程 31/4/3 Case 分组，不改验证/测试分配 |
+| 输入 | 六类、前列腺 raw label 5；256×256 pad，现有逐切片归一化 |
+| 优化 | Adam，固定学习率 0.001，batch size 4，base channels 16，float32 |
+| 随机性 | seed 3710；均不启用数据翻转增强 |
+| 验证 | 每个 epoch 遍历全部 660 张验证切片，记录 loss 和像素汇总 Dice |
+| 权重选择 | 按最低验证 CE + foreground soft Dice loss 保存 best.pt；相同 loss 保留较早 epoch |
+| 病例评估 | 对所选 best.pt 运行 Case evaluator，报告逐 Case Dice/IoU、等权均值和分布 |
+| 测试集 | 当前阶段不评估；模型与设置确定后再进行最终测试 |
+
+选择 20 epochs 是有上限的工程预算，并非已经证明最优的轮数。
+它让训练曲线有足够观察点，又将第一组正式比较控制在笔记本可承担的范围。
+同一 epoch 数意味着两模型看到相同数量的训练样本，不意味着耗时或计算量相同。
+不加载 pilot 权重继续训练，以免基线实际比 Improved U-Net 多训练一轮。
+如后续调整预算、学习率或增强，应作为另一个明确记录的实验，不能覆盖这组结果。
+
+基线 pilot 每轮训练、验证及保存约 129.56 秒，线性估计 20 轮约 **43 分钟**；
+这只是规划值，实际受设备负载、散热和 I/O 影响。Improved U-Net 的真实六类单轮时间
+尚未测量，先做独立的容量/耗时试跑，再从头开始其正式 20 轮实验。
+不能直接把此前两类合成资源测试当作真实六类实验耗时。
+
+## 下次执行命令
+
+在本项目目录、已激活项目 Python 环境的终端逐条执行；每次使用全新的输出目录。
+本机已完成基线 GPU 运行，当前不需要 Rangpur。
+
+基线正式训练：
+
+```bash
+python train.py --model unet --manifest private_data/manifests/course_v1.csv --label-values 0 1 2 3 4 5 --prostate-label 5 --image-size 256 --resize-mode pad --base-channels 16 --batch-size 4 --epochs 20 --lr 0.001 --seed 3710 --device cuda --output runs/real_unet_20ep_s3710
+```
+
+训练结束后评估其最佳权重：
+
+```bash
+python evaluate_cases.py --checkpoint runs/real_unet_20ep_s3710/best.pt --manifest private_data/manifests/course_v1.csv --output runs/real_unet_20ep_s3710/case_validation --device cuda --batch-size 4
+```
+
+Improved U-Net 先做独立的一轮试跑，输出至 `runs/real_improved_unet_pilot`；
+确认能正常训练后，正式实验使用相同设置，将 `--model` 改为 `improved_unet`，
+输出改为 `runs/real_improved_unet_20ep_s3710`，并对该实验的 best.pt 运行同一个病例评估工具。
+同 seed 不保证两架构初始化相同；PyTorch 已提示部分 CUDA 运算非确定性。
+
+## 本阶段验证范围
+
+新增 5 项针对性测试和现有 9 项指标测试通过。真实评估遍历全部 660 张验证切片，
+按 Case 汇总后再合并的像素指标与训练时的验证指标完全一致。
+人工 NIfTI 测试包含不存在的 train/test 文件，验证评估工具没有读取这些图像。
+新工具只提供验证集模式；病例、周次元数据仍来自固定清单，未据指标重新划分数据。
+
+下一步按本计划完成基线长训练，之后再完成 Improved U-Net 试跑和正式训练。
+最终还需两模型资源比较、边界分析与 3–5 个真实失败案例；未知物理单位不能当成毫米报告。

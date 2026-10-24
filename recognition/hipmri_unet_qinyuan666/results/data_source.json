@@ -1,5 +1,5 @@
 {
-  "status": "first_real_unet_training_pilot_completed",
+  "status": "real_unet_pilot_and_case_validation_completed",
   "source": {
     "title": "Labelled weekly MR images of the male pelvis",
     "publisher": "CSIRO",
@@ -231,8 +231,10 @@
     "checkpoint_reload_exact": true,
     "validation_prediction_examples_checked": 4,
     "test_set_model_evaluation_performed": false,
-    "patient_level_evaluation_completed": false,
-    "real_improved_unet_comparison_completed": false
+    "patient_level_evaluation_completed": true,
+    "real_improved_unet_comparison_completed": false,
+    "patient_level_evaluation_scope": "Validation only; equal-weight manifest Case groups after pooling all slices and weeks. Not final test evaluation.",
+    "case_validation_summary": "results/pilot_unet_cases.json"
   },
   "preparation": {
     "label_dictionary": "labels.json",
