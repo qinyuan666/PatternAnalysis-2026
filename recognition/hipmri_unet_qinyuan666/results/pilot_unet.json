@@ -236,7 +236,7 @@
     "Pixel-aggregated metrics; patient-level and physical-boundary evaluation still required.",
     "One epoch and one seed; convergence and generalisation are not established.",
     "No Improved U-Net real-data comparison or test-set evaluation yet.",
-    "Validation scores pool pixels across 660 slices; not the assignment's patient-level prostate Dice target.",
+    "Validation scores pool pixels across 660 slices; not evidence of the assignment's test-set prostate Dice target. The task does not explicitly prescribe the averaging method.",
     "Padding is included in metrics and loss; background scores include added background pixels.",
     "Elapsed training time excludes initial validation and final reload/inference checks.",
     "Training scores accumulate during parameter updates; they are not final-model training-set scores.",

@@ -256,7 +256,7 @@ See [full pilot notes and private output locations](REAL_DATA_PILOT.md),
 [per-class validation chart](figures/real_pilot_unet_validation.png).
 These scores pool pixels across slices, include padded background and are not
 patient-averaged or test-set scores. One epoch does not establish convergence
-or achievement of the assignment's patient-level target. The first four validation
+or achievement of the assignment's test-set target. The first four validation
 examples contain no prostate in either truth or prediction, so their example Dice
 is undefined; the aggregate prostate score above uses the complete validation set.
 No test-set model evaluation was performed.
@@ -285,6 +285,12 @@ the original pilot exactly. These are validation results, not final test evidenc
 Case grouping follows the dataset convention and weeks are not averaged separately.
 See [Case results](results/pilot_unet_cases.json) and the
 [fixed next-stage experiment plan](TRAINING_PLAN.md).
+
+Requirement clarification: the task PDF, page 6, sets prostate test-set Dice >= 0.75
+for both selected HipMRI 2D models; it does not explicitly prescribe pixel pooling
+versus an equal-patient mean. We report both aggregations transparently. The earlier
+midpoint review below chose a mean-patient target as a project acceptance criterion;
+that more specific averaging rule should not be attributed to the task wording.
 
 The remaining summaries and figures in this section are historical **synthetic engineering evidence**.
 The original training implementation is
