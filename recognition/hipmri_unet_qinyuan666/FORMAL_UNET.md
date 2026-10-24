@@ -1,7 +1,8 @@
 # U-Net 正式基线：20 epoch 实验
 
 本次已从头完成 20 个 epoch，使用全部 11,460 张训练切片和 660 张验证切片。
-**这份报告只包含验证结果，没有进行测试集模型评估，也尚未完成与 Improved U-Net 的真实数据比较。**
+**这份报告只包含验证结果，没有进行测试集模型评估。** 后续已完成同预算的
+[Improved U-Net 验证比较](FORMAL_IMPROVED_UNET.md)，本页保留基线的详细记录。
 
 ## 设置与权重选择
 
@@ -83,8 +84,7 @@ base channels 16、batch size 4、Adam 0.001、seed 3710、float32，不启用�
 
 ## 后续工作
 
-后续已完成 [Improved U-Net 真实六类试跑](IMPROVED_UNET_PILOT.md)。下一步按相同预算从头训练 20 epochs，
-其长训练尚未执行；不能用单轮结果和本页 20 轮预算结果作最终架构比较。
+Improved U-Net 的容量试跑和同预算 20 epoch 正式实验现已完成，结果见上方比较报告。
 最终还需要两模型在固定测试集上的各类 Dice/IoU、整病例推理耗时、边界精度和 3–5 个失败案例。
 物理空间单位仍未知，边界距离不可直接报告成毫米。
 数据致谢与参考文献见 [README](README.md#data-acknowledgement)。

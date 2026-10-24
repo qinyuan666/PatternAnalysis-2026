@@ -1,29 +1,31 @@
 # 正式训练预算与验证规则
 
-本计划在单轮 U-Net pilot 和按 Case 验证后确定。**U-Net 的 20 epoch 实验和 Improved U-Net 单轮试跑已完成；Improved U-Net 的 20 epoch 实验已在本机后台启动，尚未确认完成。**
+本计划在单轮 U-Net pilot 和按 Case 验证后确定。**两模型的单轮试跑和各 20 epoch 正式实验均已完成并核验；测试集尚未评估。**
 正式基线按最低验证 loss 选中第 5 轮，验证集前列腺像素汇总 Dice 为 0.8291、Case 等权平均为 0.8090，
 实际训练计时为 51.70 分钟。完整结果见 [正式基线报告](FORMAL_UNET.md)。下文保留实验开始前确定的设置与 pilot 依据。
 
 [Improved U-Net 试跑](IMPROVED_UNET_PILOT.md) 已确认本机能训练六类配置：单轮 451.92 秒，
-验证前列腺像素汇总 Dice 0.7919、Case 等权平均 0.7625。正式 20 轮预计约 151 分钟（2.5 小时），
-为单次观测的线性估计，不是完成时间保证。训练与正式测速期间宜避免同时运行游戏，以减少资源争用。
+验证前列腺像素汇总 Dice 0.7919、Case 等权平均 0.7625。原估计正式 20 轮约 151 分钟，
+实际正式训练计时为 66.70 分钟；单次 pilot 线性估计不能保证耗时。
+[正式 Improved U-Net 报告](FORMAL_IMPROVED_UNET.md) 记录第 11 轮权重及验证比较：
+像素汇总前列腺 Dice 0.8320、Case 等权平均 0.7934。
 
 ## 当前后台任务
 
-已启动 [run_improved_experiment.py](run_improved_experiment.py)，不要重复运行训练命令。
+由 [run_improved_experiment.py](run_improved_experiment.py) 启动的任务现已完成，状态为 `completed`，不要重复运行训练命令。
 脚本按下方固定设置从头训练 20 epochs，成功后自动运行验证集 Case 评估；不评估测试集。
 三个编排测试通过：拒绝覆盖已有目录、训练失败后不继续评估、验证结束后才标记完成。
-训练完成后再核对结果和提交报告；启动不等于已完成，此方式无需聊天持续轮询。
+训练及验证结果已核对并整理。以下保留状态查看与复现方法；当前不再需要等待训练。
 
 本机 PowerShell 查看状态与最新训练日志：
 
 ```powershell
 cd C:\Users\ROG\Desktop\Final\recognition\hipmri_unet_qinyuan666
 Get-Content .\runs\real_improved_unet_20ep_s3710\status.json
-Get-Content .\runs\real_improved_unet_20ep_s3710\training.log -Tail 5 -Wait
+Get-Content .\runs\real_improved_unet_20ep_s3710\training.log -Tail 5
 ```
 
-日志每完成一轮才增加指标，第一轮需要几分钟。`Ctrl+C` 只退出上述日志查看，不停止后台训练。
+运行期间日志每完成一轮才增加指标；若另行使用 `-Wait` 跟踪日志，`Ctrl+C` 只退出查看，不停止训练。
 状态依次为 `training`、`evaluating`、`completed`；异常时为 `failed`。
 状态只在阶段切换时更新，不是逐秒心跳。训练错误/警告在 `training_stderr.log`，
 验证日志在 `evaluating.log` / `evaluating_stderr.log`；源码和清单哈希在 `launch_provenance.json`。
@@ -36,7 +38,7 @@ $runStatus = Get-Content .\runs\real_improved_unet_20ep_s3710\status.json | Conv
 Get-Process -Id $runStatus.wrapper_pid -ErrorAction SilentlyContinue
 ```
 
-保持电脑开机、接电且不睡眠，尽量不同时打游戏。强制结束或关机可能来不及更新状态；
+未来复现训练期间保持电脑开机、接电且不睡眠，尽量不同时打游戏。强制结束或关机可能来不及更新状态；
 脚本不会自动重启或恢复训练，重新运行会拒绝已有目录。
 另行复现时指定新目录：`python run_improved_experiment.py --output runs/improved_reproduce`。
 
@@ -58,7 +60,7 @@ Get-Process -Id $runStatus.wrapper_pid -ErrorAction SilentlyContinue
 每个 Case 内的所有周次一起累计，不是先按扫描或切片求平均，也没有重建 3D 物理体积。
 数据分组依据与限制见 [数据记录](DATA_ACCESS.md)。
 
-目前只有一轮训练，无法判断是否收敛，也不能据验证集结果声称达到最终测试要求。
+制定计划时只有一轮训练，无法判断是否收敛；目前已完成两组 20 轮，但仍不能据验证集结果声称达到最终测试要求。
 原任务 PDF 第 6 页的目标是测试集前列腺 Dice ≥ 0.75，未明确指定平均方式。
 逐 Case 分数及等权平均是本项目用于呈现病例差异的补充，同时保留像素汇总指标。
 完整数值及来源哈希见 [病例评估汇总](results/pilot_unet_cases.json)。
@@ -85,7 +87,7 @@ Get-Process -Id $runStatus.wrapper_pid -ErrorAction SilentlyContinue
 
 基线 pilot 每轮训练、验证及保存约 129.56 秒，线性估计 20 轮约 **43 分钟**；
 这只是原规划值，实际受设备负载、散热和 I/O 影响；基线正式运行实际为 51.70 分钟。
-Improved U-Net 的真实六类单轮耗时现已测得 451.92 秒，后续仍需从头开始正式 20 轮实验。
+Improved U-Net 的真实六类单轮耗时为 451.92 秒；从头开始的正式 20 轮实验现已完成。
 不能直接把此前两类合成资源测试当作真实六类实验耗时。
 
 ## 复现与下一阶段命令
@@ -106,7 +108,7 @@ python evaluate_cases.py --checkpoint runs/real_unet_20ep_s3710/best.pt --manife
 ```
 
 Improved U-Net 独立的一轮试跑已完成，输出位于 `runs/real_improved_unet_pilot`。
-下一步正式实验从头训练，不加载 pilot 权重：
+以下是已完成的正式实验命令，从头训练且未加载 pilot 权重；复现时同时修改训练和评估的输出路径：
 
 ```bash
 python train.py --model improved_unet --manifest private_data/manifests/course_v1.csv --label-values 0 1 2 3 4 5 --prostate-label 5 --image-size 256 --resize-mode pad --base-channels 16 --batch-size 4 --epochs 20 --lr 0.001 --seed 3710 --device cuda --output runs/real_improved_unet_20ep_s3710
@@ -124,5 +126,5 @@ python evaluate_cases.py --checkpoint runs/real_improved_unet_20ep_s3710/best.pt
 人工 NIfTI 测试包含不存在的 train/test 文件，验证评估工具没有读取这些图像。
 新工具只提供验证集模式；病例、周次元数据仍来自固定清单，未据指标重新划分数据。
 
-基线长训练、Improved U-Net 单轮试跑及两者的病例验证已完成；下一步完成 Improved U-Net 正式长训练。
+两模型正式长训练、单轮试跑及病例验证已完成；下一步准备固定测试评估。
 最终还需两模型资源比较、边界分析与 3–5 个真实失败案例；未知物理单位不能当成毫米报告。

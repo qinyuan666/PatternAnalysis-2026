@@ -1,5 +1,5 @@
 {
-  "status": "formal_unet_and_improved_unet_pilot_validation_completed",
+  "status": "both_formal_20_epoch_runs_and_validation_comparison_completed",
   "source": {
     "title": "Labelled weekly MR images of the male pelvis",
     "publisher": "CSIRO",
@@ -262,6 +262,23 @@
     "formal_20_epoch_run_completed": false,
     "test_set_model_evaluation_performed": false
   },
+  "formal_improved_unet": {
+    "epochs_completed": 20,
+    "selected_epoch": 11,
+    "selection_rule": "Minimum validation CE plus foreground soft Dice loss",
+    "summary": "results/formal_improved_unet.json",
+    "case_validation_summary": "results/formal_improved_unet_cases.json",
+    "notes": "FORMAL_IMPROVED_UNET.md",
+    "checkpoint_reload_exact": true,
+    "case_confusions_reproduce_pooled_validation_scores": true,
+    "validation_positive_examples_checked": 4,
+    "same_example_selection_as_formal_baseline": true,
+    "matched_baseline_configuration_verified": true,
+    "source_hashes_match_launch_snapshot": true,
+    "validation_comparison_completed": true,
+    "test_set_model_evaluation_performed": false
+  },
+  "historical_flags_note": "Completion flags inside pilot/formal_unet records describe those earlier milestones; current formal Improved U-Net progress is in formal_improved_unet.",
   "preparation": {
     "label_dictionary": "labels.json",
     "label_evidence": "results/label_verification.json",

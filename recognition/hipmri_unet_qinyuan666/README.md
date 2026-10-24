@@ -9,9 +9,9 @@ the course 2D slice directories. The project label dictionary, private training
 manifest and aspect-preserving preprocessing are prepared. The local GPU has
 completed a one-epoch pilot and a fresh 20-epoch U-Net baseline, with Case-level
 validation and prediction checks. Improved U-Net has also completed a one-epoch
-real-data capacity/stability pilot. Its 20-epoch training is now running locally
-in the background; completion and results are not yet verified. The final model
-comparison and test evaluation remain future work.
+real-data capacity/stability pilot and a fresh 20-epoch run. Both formal runs have
+verified checkpoints, Case-level validation and matched example predictions.
+Validation comparison is available; final test evaluation and failure analysis remain pending.
 
 Student account: **s4906920**. Repository: [course fork](https://github.com/qinyuan666/PatternAnalysis-2026/tree/topic-recognition).
 
@@ -35,6 +35,8 @@ Student account: **s4906920**. Repository: [course fork](https://github.com/qiny
   selected epoch 5, full curves and Case-level validation.
 - [Improved U-Net pilot (Chinese)](IMPROVED_UNET_PILOT.md): one real-data epoch,
   Case validation, six-class GPU measurements and matched example slices.
+- [Formal Improved U-Net comparison (Chinese)](FORMAL_IMPROVED_UNET.md): completed
+  20 epochs, selected epoch 11, matched baseline comparison and output locations.
 
 | Item | Status |
 |---|---|
@@ -51,7 +53,7 @@ Student account: **s4906920**. Repository: [course fork](https://github.com/qiny
 | Case-level validation | Five evaluator tests passed; pilot mean prostate Dice 0.7044, formal baseline 0.8090 |
 | Formal U-Net baseline | 20 epochs completed; epoch 5 selected by validation loss; pooled prostate Dice 0.8291 |
 | Improved U-Net real-data pilot | One epoch completed; pooled prostate Dice 0.7919, equal-Case mean 0.7625 |
-| Improved U-Net formal training | Background 20-epoch run launched; completion not yet verified |
+| Improved U-Net formal training | 20 epochs completed; epoch 11 selected; pooled prostate Dice 0.8320, equal-Case mean 0.7934 |
 | Full model comparison, test scores and failure cases | Not completed |
 | Tutor discussion and check-off | Student must attend; not claimed complete |
 
@@ -289,6 +291,25 @@ and [training curves](figures/real_unet_20ep_curves.png). Four local prostate-po
 examples were selected by median ground-truth area within each validation Case,
 not by prediction quality; these are illustrations, not the final failure-case analysis.
 
+The **20-epoch Improved U-Net run** is also complete. Epoch 11 had the lowest
+validation loss (0.415270). Prostate pooled Dice/IoU were **0.8320 / 0.7123**,
+equal-Case mean Dice **0.7934**, and foreground macro Dice **0.9026**.
+Pooled prostate Dice slightly exceeded the baseline's 0.8291, while equal-Case
+mean fell from 0.8090: Case 01/04 improved, Case 02/03 worsened. Case 03 fell
+from 0.7586 to 0.6872. Different aggregation weights explain the different trends;
+the results do not establish overall superiority of the improved architecture.
+
+The run took **66.70 minutes**, with **0.648 GiB allocated / 0.855 GiB reserved**
+peak allocator memory and **5.149 ms** batch-one model-only median inference.
+These are single-run laptop observations, not controlled timing comparisons.
+Completed history, minimum-loss selection, checkpoint/data/source hashes and
+pooled/Case agreement were verified. The same four baseline example slices were
+inspected; the selected Case 03 slice still shows under-segmentation (Dice 0.5965).
+See [formal comparison and limitations](FORMAL_IMPROVED_UNET.md),
+[full history](results/formal_improved_unet.json),
+[Case scores](results/formal_improved_unet_cases.json) and
+[training curves](figures/real_improved_unet_20ep_curves.png).
+
 The records below retain the preceding pilot and synthetic checks as historical evidence.
 
 The historical midpoint CPU suite passed **41 tests**; see the archived
@@ -391,9 +412,9 @@ and validation. These are illustration examples, not clinical failure cases:
 ![Synthetic baseline prediction examples](figures/synthetic_predictions_unet.png)
 ![Synthetic improved-model prediction examples](figures/synthetic_predictions_improved_unet.png)
 
-**Current next step:** let the launched Improved U-Net 20-epoch experiment finish,
-then verify and publish its validation results. See [TRAINING_PLAN.md](TRAINING_PLAN.md)
-for background status/log commands. Do not launch a duplicate run.
+**Current next step:** preserve the completed validation comparison and prepare
+fixed test evaluation, per-Case inference measurements and boundary/failure analysis.
+See [TRAINING_PLAN.md](TRAINING_PLAN.md) for the completed run and reproduction commands.
 
 The [background runner](run_improved_experiment.py) preserves the fixed configuration,
 records source/manifest hashes, logs each subprocess and evaluates validation only
@@ -518,7 +539,7 @@ Architecture choices were checked against the primary papers. Verification
 includes patient/label checks, artificial NIfTI integration tests for both models,
 loss/metric edge cases, finite gradients, checkpoint reloads, manifest integrity,
 measured synthetic runs and a rendered one-page PDF inspection. Codex also assisted
-with both one-epoch pilots, the 20-epoch real-data baseline, Case validation, result
+with both one-epoch pilots, both 20-epoch real-data runs, Case validation, result
 summaries and prediction checks. Training completed with finite-loss/gradient guards;
 the selected checkpoint reloaded exactly and Case aggregates matched pooled metrics.
 

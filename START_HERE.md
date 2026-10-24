@@ -1,17 +1,17 @@
 # COMP3710 项目启动清单
 
-选题已确定：HipMRI 2D 分割，标准 2D U-Net 基线，2D Improved U-Net 主模型（Normal），账号 s4906920。数据准备、两模型真实单轮 pilot、20 epoch 正式 U-Net 基线及按 Case 验证已完成，权重重载和预测输出已检查。Improved U-Net 正式长训练、最终模型比较与测试评估尚未完成。tutor check-off 的完成状态尚未收到确认。
+选题已确定：HipMRI 2D 分割，标准 2D U-Net 基线，2D Improved U-Net 主模型（Normal），账号 s4906920。数据准备、两模型真实单轮 pilot、各 20 epoch 正式训练及按 Case 验证已完成，权重重载和预测输出已检查。验证比较已整理，最终测试与失败分析尚未完成。tutor check-off 的完成状态尚未收到确认。
 
 ## 现在从这里开始
 
 1. 查看 [数据获取与本地位置](recognition/hipmri_unet_qinyuan666/DATA_ACCESS.md)：课程数据位于项目内的 `private_data/keras_slices_data/`，25,320 个文件和 12,660 对图像/标注均通过本地完整性检查。
-2. [正式基线报告](recognition/hipmri_unet_qinyuan666/FORMAL_UNET.md)：20 epoch 已完成，按验证 loss 选中第 5 轮；验证集前列腺像素汇总 Dice 为 0.8291，Case 等权平均为 0.8090。[Improved U-Net 单轮试跑](recognition/hipmri_unet_qinyuan666/IMPROVED_UNET_PILOT.md) 也已完成，分别为 0.7919 / 0.7625。下一步按 [训练计划](recognition/hipmri_unet_qinyuan666/TRAINING_PLAN.md) 从头训练 Improved U-Net 20 epochs，预计约 2.5 小时；尚未评估测试集。
+2. [正式基线报告](recognition/hipmri_unet_qinyuan666/FORMAL_UNET.md)：选中第 5 轮，前列腺像素汇总 Dice 0.8291、Case 等权平均 0.8090。[Improved U-Net 正式比较报告](recognition/hipmri_unet_qinyuan666/FORMAL_IMPROVED_UNET.md)：选中第 11 轮，分别为 0.8320 / 0.7934，实际训练 66.70 分钟。两者均完成 20 epochs；当前结果不支持改进模型整体更优，测试集尚未评估。
 3. 中期材料保留在 [一页评估 PDF](recognition/hipmri_unet_qinyuan666/feasibility_review.pdf) 和 [中文讨论笔记](recognition/hipmri_unet_qinyuan666/MIDPOINT_NOTES_ZH.md)，描述当时的合成验证阶段。
 4. 完整运行方法、实验记录和 AI 披露见 [项目 README](recognition/hipmri_unet_qinyuan666/README.md)。
 
-当前 Improved U-Net 正式训练已在本机后台启动，尚未完成；
+当前 Improved U-Net 后台训练及验证均已完成，状态为 `completed`；
 [查看日志与状态](recognition/hipmri_unet_qinyuan666/TRAINING_PLAN.md#当前后台任务)。
-训练成功后脚本自动评估验证集，无需重复启动或持续聊天监控。
+无需重复启动。下一步是固定测试评估、整病例测速与失败案例分析。
 
 ## 仓库
 
@@ -46,7 +46,8 @@
 - [x] 完成按 Case 汇总的验证指标，固定两模型各 20 epoch 的正式训练预算。
 - [x] 完成正式基线 20 epoch 训练、最佳权重重载、全部验证切片的 Case 评估及阳性切片示例检查。
 - [x] 完成 Improved U-Net 真实六类单轮试跑、资源测量、权重重载与病例评估。
-- [ ] Improved U-Net 20 epoch 正式训练已后台启动，等待完成并核对验证结果，再比较两模型。
+- [x] 完成 Improved U-Net 20 epoch 正式训练、验证指标核验、同切片预测展示与基线验证比较。
+- [ ] 完成固定测试评估、整病例测速、边界及失败案例分析。
 - [ ] 本人在 practical 与 tutor 讨论，并确认 check-off 已登记。
 
 已确认路线：HipMRI 标准 2D U-Net 基线，2D Improved U-Net（Normal）主模型，并在相同患者划分上比较。项目位置：`recognition/hipmri_unet_qinyuan666/`。
