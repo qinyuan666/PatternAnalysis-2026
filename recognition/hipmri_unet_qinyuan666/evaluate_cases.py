@@ -1,7 +1,8 @@
-"""Evaluate all validation slices, pooling weeks/slices within each manifest Case.
+"""Evaluate a fixed validation or test split, pooling slices within each Case.
 
-This command deliberately evaluates validation only. It does not estimate 3D
-physical boundaries or use the test set. Public aliases omit source Case IDs.
+Validation is the default. Test evaluation requires explicit --split test after
+checkpoint selection is frozen. No fitting or model selection is performed.
+This does not estimate physical boundaries. Public aliases omit source Case IDs.
 """
 from __future__ import annotations
 
@@ -63,7 +64,9 @@ def summarize_cases(matrices: dict, slice_counts: dict, prostate_channel: int) -
 
 
 def evaluate(checkpoint: Path, manifest: Path, output: Path,
-             device: str = "auto", batch_size: int = 4) -> dict:
+             device: str = "auto", batch_size: int = 4, *, split: str = "val") -> dict:
+    if split not in ("val", "test"):
+        raise ValueError("split must be val or test")
     if isinstance(batch_size, bool) or not isinstance(batch_size, int) or batch_size < 1:
         raise ValueError("batch_size must be a positive integer")
     checkpoint, manifest, output = Path(checkpoint), Path(manifest), Path(output)
@@ -76,7 +79,7 @@ def evaluate(checkpoint: Path, manifest: Path, output: Path,
     if manifest_hash != config.get("manifest_sha256"):
         raise ValueError("Evaluation manifest does not match checkpoint manifest_sha256")
     selected_device = _device(device)
-    data = HipMRIDataset(manifest, "val", config["image_size"], config["label_values"],
+    data = HipMRIDataset(manifest, split, config["image_size"], config["label_values"],
                         augment=False, resize_mode=config["resize_mode"])
     model = build_model(config["model"], num_classes=config["num_classes"],
                         base_channels=config["base_channels"]).to(selected_device)
@@ -98,20 +101,24 @@ def evaluate(checkpoint: Path, manifest: Path, output: Path,
                 counts[case] += 1
     result = summarize_cases(matrices, counts, channel)
     result.update({
-        "model": config["model"], "epoch": payload["epoch"], "split": "val",
+        "model": config["model"], "epoch": payload["epoch"], "split": split,
         "label_values": config["label_values"], "prostate_raw_label": config["prostate_label"],
         "prostate_class_index": channel, "image_size": config["image_size"],
         "resize_mode": config["resize_mode"], "batch_size": batch_size,
-        "device": str(selected_device), "test_evaluated": False,
+        "device": str(selected_device), "test_evaluated": split == "test",
         "manifest_sha256": manifest_hash, "checkpoint_sha256": sha(checkpoint),
         "evaluator_sha256": sha(Path(__file__)),
+        "dependency_sha256": {name: sha(Path(__file__).parent / name) for name in
+                              ("dataset.py", "modules.py", "metrics.py", "predict.py")},
         "aggregation": "Sum confusion matrices across every slice and week of each manifest patient_id (Case), then average defined Case scores equally.",
         "empty_policy": "Both truth and prediction empty: null, excluded from mean with count reported. One empty: zero.",
         "limitations": [
             "Case grouping follows the adopted pseudonymous dataset convention.",
             "Weeks are pooled within each Case; not a per-scan average or reconstructed 3D volume metric.",
             "Metrics include the padded input grid; not physical-space boundary measurements.",
-            "Validation used for model development; not final test evidence or a clinical claim.",
+            ("Validation used for model development; not final test evidence or a clinical claim."
+             if split == "val" else
+             "Held-out test evaluation of a previously selected checkpoint; few Cases and one seed, not a clinical claim."),
         ],
     })
     output.mkdir(parents=True)
@@ -129,6 +136,8 @@ def main():
     parser.add_argument("--output", type=Path, required=True, help="New private directory, usually under runs/")
     parser.add_argument("--device", choices=("auto", "cpu", "cuda"), default="auto")
     parser.add_argument("--batch-size", type=int, default=4)
+    parser.add_argument("--split", choices=("val", "test"), default="val",
+                        help="Use test only after freezing checkpoints and evaluation protocol")
     args = parser.parse_args()
     torch.set_num_threads(4)
     result = evaluate(**vars(args))

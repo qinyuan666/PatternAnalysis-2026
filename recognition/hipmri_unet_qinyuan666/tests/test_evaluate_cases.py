@@ -1,4 +1,4 @@
-"""Verify equal-Case weighting, empty masks, provenance and validation-only I/O."""
+"""Verify aggregation, provenance and isolation of explicitly selected splits."""
 import csv
 import hashlib
 import json
@@ -34,7 +34,7 @@ class CaseEvaluationTests(unittest.TestCase):
         all_empty = summarize_cases({"a": torch.tensor([[10, 0], [0, 0]])}, {"a": 1}, 1)
         self.assertIsNone(all_empty["prostate_case_dice"]["mean"])
 
-    def fixture(self, root):
+    def fixture(self, root, split="val"):
         rows = []
         for index, case in enumerate(("private-A", "private-B", "private-A")):
             image = np.ones((32, 16), dtype=np.float32)
@@ -42,10 +42,11 @@ class CaseEvaluationTests(unittest.TestCase):
             mask[:index+1, :] = 5
             for name, array in ((f"image{index}.nii.gz", image), (f"mask{index}.nii.gz", mask)):
                 nib.save(nib.Nifti1Image(array, np.eye(4)), root/name)
-            rows.append([f"image{index}.nii.gz", f"mask{index}.nii.gz", case, "val"])
-        # Missing train/test files prove evaluation does not open them.
+            rows.append([f"image{index}.nii.gz", f"mask{index}.nii.gz", case, split])
+        # Missing files in other splits prove evaluation does not open them.
+        other = "test" if split == "val" else "val"
         rows += [["missing_train.nii.gz", "missing_train_mask.nii.gz", "train-case", "train"],
-                 ["missing_test.nii.gz", "missing_test_mask.nii.gz", "test-case", "test"]]
+                 [f"missing_{other}.nii.gz", f"missing_{other}_mask.nii.gz", "other-case", other]]
         manifest = root / "manifest.csv"
         with manifest.open("w", newline="", encoding="utf-8") as f:
             writer = csv.writer(f)
@@ -83,6 +84,32 @@ class CaseEvaluationTests(unittest.TestCase):
                 self.assertEqual(json.loads((root/"out/summary.json").read_text()), result)
         finally:
             torch.set_num_threads(previous)
+
+    def test_explicit_test_split_does_not_read_validation_or_modify_checkpoint(self):
+        previous = torch.get_num_threads()
+        torch.set_num_threads(1)
+        try:
+            with tempfile.TemporaryDirectory() as tmp:
+                root = Path(tmp)
+                checkpoint, manifest = self.fixture(root, split="test")
+                before = checkpoint.read_bytes()
+                result = evaluate(checkpoint, manifest, root/"test_out", "cpu", 2, split="test")
+                self.assertEqual(result["split"], "test")
+                self.assertTrue(result["test_evaluated"])
+                self.assertEqual(result["slice_count"], 3)
+                self.assertEqual(result["case_count"], 2)
+                self.assertEqual(result["pixel_pooled"]["per_class"][1]["support_pixels"], 96)
+                self.assertEqual(result["prostate_case_dice"]["mean"], 0)
+                self.assertEqual(checkpoint.read_bytes(), before)
+                self.assertEqual(result["checkpoint_sha256"], hashlib.sha256(before).hexdigest())
+                self.assertNotIn("private-A", json.dumps(result))
+        finally:
+            torch.set_num_threads(previous)
+
+    def test_training_or_unknown_split_is_rejected_before_io(self):
+        for split in ("train", "all", "validate"):
+            with self.subTest(split=split), self.assertRaisesRegex(ValueError, "split"):
+                evaluate(Path("missing"), Path("missing"), Path("missing"), split=split)
 
     def test_changed_manifest_is_rejected_before_output(self):
         with tempfile.TemporaryDirectory() as tmp:
