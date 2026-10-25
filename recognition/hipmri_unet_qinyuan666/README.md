@@ -1,499 +1,420 @@
-# HipMRI 2D segmentation: U-Net versus Improved U-Net
+# HipMRI segmentation: does a 2D Improved U-Net improve boundary utility?
 
-This individual COMP3710 project investigates whether an Improved U-Net reduces
-prostate boundary errors compared with a standard 2D U-Net at an acceptable GPU
-cost. The selected task is HipMRI segmentation, with a Normal-difficulty main
-model. A synthetic prototype and midpoint review are available. The current
-stage has acquired the official original dataset, its label documentation and
-the course 2D slice directories. The project label dictionary, private training
-manifest and aspect-preserving preprocessing are prepared. The local GPU has
-completed a one-epoch pilot and a fresh 20-epoch U-Net baseline, with Case-level
-validation and prediction checks. Improved U-Net has also completed a one-epoch
-real-data capacity/stability pilot and a fresh 20-epoch run. Both formal runs have
-verified checkpoints, Case-level validation and matched example predictions.
-Validation and fixed held-out test Dice/IoU comparisons are complete. Both models
-meet prostate test Dice >= 0.75 under pixel pooling and equal-Case averaging.
-Per-Case timing was repeated after the user reported stopping the game; the
-initial contended run is preserved separately. Boundary/failure analysis and
-final submission remain pending.
+**COMP3710 individual project | s4906920 | Normal difficulty: HipMRI 2D Improved U-Net**
 
-Student account: **s4906920**. Repository: [course fork](https://github.com/qinyuan666/PatternAnalysis-2026/tree/topic-recognition).
+## Outcome and engineering recommendation
 
-## Project status and midpoint materials
+This project implements a standard 2D U-Net and a residual, deeply supervised
+2D Improved U-Net to draft six-class pelvic MRI segmentations for researcher
+review. The question is whether extra architectural complexity improves prostate
+boundaries enough to justify its computation. Both fixed models exceed the
+assignment's prostate test Dice target of 0.75. Improved U-Net slightly improves
+pooled test Dice (0.8495 versus 0.8460), but does not improve prostate boundary F1
+on the same 195 positive slices (0.8659 versus 0.8675). Small targets and annotation
+transitions remain unreliable. For this prototype, retain the smaller U-Net as
+the default research baseline; neither model supports unattended contour acceptance.
 
-- [One-page feasibility review (PDF)](feasibility_review.pdf), with editable
-  [Markdown source](feasibility_review.md), also reproduced below.
-- [Chinese discussion notes](MIDPOINT_NOTES_ZH.md): understand the choices,
-  measurements and limitations before the tutor discussion.
-- [Rangpur instructions](RANGPUR.md): login, bounded inventory, data audit and
-  an optional real-data pilot after resource allocation.
-- [Data acquisition and local files](DATA_ACCESS.md): official original release,
-  label dictionary, integrity checks and the remaining course-2D questions.
-- [Course download audit](results/course_download_audit.json): all local files,
-  pairing, numeric labels, shapes and filename case-group separation.
-- [Label evidence](results/label_verification.json), [manifest preparation](results/data_preparation.json)
-  and [actual input checks](results/preprocessing_check.json): the next completed preparation stage.
-- [Real-data pilot notes (Chinese)](REAL_DATA_PILOT.md) and [aggregate results](results/pilot_unet.json):
-  one complete U-Net training epoch, validation, checkpoint reload and prediction.
-- [Formal U-Net report (Chinese)](FORMAL_UNET.md): completed 20-epoch baseline,
-  selected epoch 5, full curves and Case-level validation.
-- [Improved U-Net pilot (Chinese)](IMPROVED_UNET_PILOT.md): one real-data epoch,
-  Case validation, six-class GPU measurements and matched example slices.
-- [Formal Improved U-Net comparison (Chinese)](FORMAL_IMPROVED_UNET.md): completed
-  20 epochs, selected epoch 11, matched baseline comparison and output locations.
-- [Fixed test protocol](TEST_PROTOCOL.md) and [test results (Chinese)](TEST_RESULTS.md):
-  540 test slices, three Cases, per-class Dice/IoU and both prostate aggregation methods.
-- [Per-Case inference measurements (Chinese)](CASE_BENCHMARK.md) and
-  [measurement protocol](BENCHMARK_PROTOCOL.md): image-to-mask and forward-only timing.
+The implemented choice is the Normal-difficulty 2D Improved U-Net option in
+assessment Section 2.2. It is not a 3D model and cannot establish the benefit of
+true volumetric continuity or dilated CAN context. Its additional residual and
+multiscale processing did not resolve the boundary dilemma on this experiment.
+The prototype, final test evaluation, resource measurements and five failure
+illustrations are complete. Turnitin submission and later teaching-team code
+review responses are separate student actions.
 
-| Item | Status |
+## 1. Requirements, data and evaluation contract
+
+The intended user is an MRI researcher assessing candidate contours, not an
+autonomous treatment-planning system. The midpoint feasibility review is retained
+below as historical evidence. Its proposed criteria are assessed as follows:
+
+| Criterion | Final evidence |
 |---|---|
-| Baseline and main model, modular training/prediction | Implemented |
-| NIfTI loading, leakage checks, losses/metrics, checkpoint tests | 52-test regression suite passed, followed by four new manifest tests |
-| Synthetic training, reload and prediction | Completed for both models |
-| Local GPU resource measurements | Completed for the stated tensor configurations |
-| Original HipMRI 3D data and label dictionary | Downloaded from CSIRO; ZIP CRC passed; 211 image/mask pairs |
-| Course-preprocessed 2D download | 25,320 files / 12,660 pairs locally checked; filename case groups disjoint across course splits |
-| Download audit tool | Six targeted tests passed, including truncated gzip and missing-mask failures |
-| Project label dictionary | Official 0–5 mapping adopted; exact image/mask correspondence verified in three all-class training cases |
-| Training manifest and preprocessing | Private CSV frozen with source hashes checked; course Case groups retained; 256 x 256 padding tested on real inputs |
-| Real-data U-Net pilot | One epoch completed; pooled validation prostate Dice 0.7244; reload and four example predictions checked |
-| Case-level validation | Five evaluator tests passed; pilot mean prostate Dice 0.7044, formal baseline 0.8090 |
-| Formal U-Net baseline | 20 epochs completed; epoch 5 selected by validation loss; pooled prostate Dice 0.8291 |
-| Improved U-Net real-data pilot | One epoch completed; pooled prostate Dice 0.7919, equal-Case mean 0.7625 |
-| Improved U-Net formal training | 20 epochs completed; epoch 11 selected; pooled prostate Dice 0.8320, equal-Case mean 0.7934 |
-| Held-out test Dice/IoU | Both frozen models evaluated; prostate pooled Dice 0.8460 / 0.8495, equal-Case mean 0.8416 / 0.8406 (U-Net / Improved) |
-| Per-Case timing | Repeated after user-reported game closure; original contended measurements retained |
-| Boundary analysis and failure cases | Not completed |
-| Tutor discussion and check-off | Student must attend; not claimed complete |
+| Patient-group isolation, alignment and labels | No filename Case overlap across splits; all 12,660 image/mask pairs checked; labels 0-5 fixed. Identity follows the dataset convention, not independently verified personal identity. |
+| Prostate held-out Dice at least 0.75 | Both models pass both pooled and equal-Case averaging; all three test Case scores also exceed 0.75. |
+| Improved prostate boundary F1 gain at least 0.02, Dice decrease no more than 0.01 | Boundary gain fails: -0.0016 on common GT-positive slices. This negative finding is retained. |
+| Peak allocated training memory at most 6 GiB; batch-one model inference at most 100 ms | Both pass in recorded local runs; measurements are hardware- and workload-specific. |
+| Reproducibility and 3-5 real failure cases | Fixed hashes, exact checkpoint reload, 73 automated tests, five distinct test-slice autopsies from three Cases. |
 
-The task permits preliminary resource evidence for the midpoint. The review below
-records the earlier synthetic-prototype stage; the data-source update is in
-[results/data_source.json](results/data_source.json). The later real-data experiments are
-reported separately; completed final assessment or clinical validity is not claimed.
+The assignment specifies prostate test Dice >= 0.75 without prescribing pooling.
+The patient/Case mean is an additional project criterion. Both are reported; the
+more favorable aggregation is not selected after seeing results.
 
-## Problem and model choices
+### Data source and split
 
-**Question:** does the improved model reduce prostate contour errors enough to
-justify additional GPU cost, compared with a standard 2D U-Net?
+Course data: `/home/groups/comp3710/HipMRI_Study_open/keras_slices_data` on Rangpur.
+Original source: HipMRI Study, CSIRO version 2 [3,4]. The local course acquisition
+contains 25,320 compressed NIfTI files paired by Case/week/slice filename keys.
+Images and masks have matching shapes and affines, finite values and integer
+labels; gzip streams were checked in full. Source-file hashes were rechecked
+before freezing the manifest, but no remote file-hash inventory was available.
 
-The baseline [1] has five encoder levels, double convolutions, max-pooling,
-transposed-convolution upsampling and concatenated skip connections. This
-implementation uses same padding and configurable channel width, rather than the
-original paper's valid-convolution/cropping design.
+| Split | Cases | Case/week groups | 2D image/mask pairs |
+|---|---:|---:|---:|
+| Train | 31 | 191 | 11,460 |
+| Validation | 4 | 11 | 660 |
+| Test | 3 | 9 | 540 |
 
-The main model adapts Isensee et al. [2]: strided downsampling, pre-activation
-residual context blocks, instance normalization, LeakyReLU, spatial dropout and
-nearest-neighbour upsampling. Three segmentation heads are upsampled and summed
-as logits, providing deep supervision. It is a **2D implementation variant** of
-the approved Improved U-Net option, not a reproduction of the complete 3D BraTS
-training, augmentation or ensemble. Baseline and main model use the same chosen
-width and loss, but do not have identical parameter counts.
+All weeks and slices of a Case remain in one split. Course assignments are
+preserved; `validate` is renamed `val`. `patient_id` in the private manifest is
+the original pseudonymous Case convention. The loader rejects Case and resolved
+file-path reuse across splits. It does not prove that unrelated filenames cannot
+contain duplicate content. The frozen manifest SHA256 is
+`5ad6cc420967afc51ec60d0772cfa8c3ff12332db3efe25437693777494c04d3`.
 
-`build_model(name, in_channels=1, num_classes=2, base_channels=16)` accepts
-`unet` or `improved_unet`. Both return raw logits `[B,C,H,W]` at the input size,
-supporting dimensions >=32. The real-data class count is set from the verified
-global label dictionary; the default two outputs are only the software-check setup.
+Labels are **0 background, 1 body, 2 bones, 3 bladder, 4 rectum, 5 prostate**.
+The official dictionary was cross-checked by exact image/mask correspondence in
+three distinct training Cases containing every class. This is not exhaustive
+anatomical reannotation. Detailed evidence: [data audit](results/course_download_audit.json),
+[label verification](results/label_verification.json), [manifest record](results/data_preparation.json).
 
-## Data contract and leakage controls
+### Preprocessing and spatial limits
 
-Course data path: `/home/groups/comp3710/HipMRI_Study_open/keras_slices_data`.
-The student's terminal screenshots confirm train/validate/test directories and
-five matching training filename keys: `case_<id>_week_<w>_slice_<s>.nii.gz` for
-images and `seg_<id>_week_<w>_slice_<s>.nii.gz` for masks. One training pair has
-been downloaded and read by the existing `load_nifti_pair`: both arrays are
-256 x 128, finite, with matching identity affines and integer mask values 0–3.
-The header's physical units are unknown; identity affines do not establish
-millimetre spacing. This sample neither defines the global class dictionary nor
-verifies patient separation. This describes the initial sample check; the later
-manifest and label evidence are recorded below. No real-data model experiment exists.
-For this pair only, both arrays exactly match a plane from the same case/week
-in the original release after plane selection and an in-plane flip. The course
-filename's slice index differs from the matched original array index; no general
-course preprocessing rule is inferred from this single match.
+12,600 pairs are 256 x 128; 60 training pairs are 256 x 144. Each image is
+z-scored using its own nonzero pixels, clipped to [-5,5], and padded to 256 x 256.
+Masks use a global label-to-channel mapping and identical geometry. The general
+resize helper uses bilinear image/nearest-neighbor mask interpolation, but these
+course shapes require only padding at size 256. No anatomy is stretched or
+removed. Background padding participates in loss and metrics, inflating background
+agreement relative to organ scores. No normalization statistics are fitted across splits.
 
-The subsequent full local acquisition audit checked all 12,660 pairs: 11,460
-train, 660 validation and 540 test, with respectively 31, 4 and 3 filename case
-groups and no case-group overlap. Full gzip-stream and NIfTI reads, pairing,
-finite values, matching image/mask shapes and affines, and integer labels passed.
-There are 12,600 pairs of shape 256 x 128 and 60 of shape 256 x 144. Observed
-mask values are 0–5; numeric values alone do not establish their anatomical
-meanings. Every affine is identity and every spatial unit is unknown. Physical
-spacing remains unverified. Subsequent label and preprocessing decisions are below.
-No remote per-file inventory or source hashes have been compared.
+All course slice affines are identity and physical units are unknown. Array
+alignment is verified; physical spacing and anatomical orientation are not.
+Distances below are pixels, never millimetres. Filename slice order supplies an
+annotation-transition proxy, not verified anatomical apex/base direction.
 
-Reproduce this read-only acquisition audit from the project directory:
+## 2. Models, learning principles and fixed experiment
 
-```bash
-python audit_course_download.py --root private_data/keras_slices_data --output results/course_download_audit.json --private-output private_data/source_metadata/course_download_audit_private.json
-```
+U-Net [1] combines a contracting path for context with an expanding path for
+localization. This independent implementation uses five levels with channels
+16, 32, 64, 128 and 256, double padded 3x3 convolutions and ReLU, max-pooling,
+transposed-convolution upsampling and concatenated skips. Same padding and
+configurable width differ from the original valid-convolution/cropping design.
 
-The public report contains aggregates; filenames, case IDs and locally computed
-hashes remain in the ignored private report. This does not create a training CSV
-or change the course splits. See [DATA_ACCESS.md](DATA_ACCESS.md) for the limits.
-The original public release is now stored privately on the local machine; it
-contains 3D volumes rather than this course-preprocessed 2D directory. Its
-official raw labels are background 0, body 1, bones 2, bladder 3, rectum 4 and
-prostate 5. These values are now adopted in [labels.json](labels.json): three
-different training cases containing every class exactly matched their original
-image and mask arrays after plane selection/orientation. This supports the
-dictionary without asserting exhaustive anatomical reannotation or full
-reconstruction of the course's original preprocessing procedure.
+Improved U-Net adapts Isensee et al. [2] into 2D: stride-two downsampling,
+pre-activation residual context blocks, affine instance normalization,
+LeakyReLU, Dropout2d(0.3), nearest-neighbor decoder upsampling and concatenated
+encoder skips. Three heads at quarter, half and full resolution are resized
+and summed as logits. One final segmentation loss propagates gradients through
+all three heads; there are not three separately weighted auxiliary losses.
+This is an independently written configurable 2D variant, not the paper's full
+3D BraTS training, augmentation or ensemble pipeline.
 
-The frozen local manifest is `private_data/manifests/course_v1.csv`, with its
-SHA-256 recorded in [results/data_preparation.json](results/data_preparation.json).
-The generator rechecked all 25,320 source-file hashes against the private
-acquisition audit. It retains the course split assignments, renames `validate`
-to `val`, and uses the original pseudonymous Case identifier for `patient_id`,
-grouping all repeated weeks and slices together. This is the adopted dataset
-grouping convention, not independent verification of personal identity.
+CNN features encode local patterns at multiple receptive fields. Encoder-decoder
+skips retain fine spatial information, while residual additions provide shorter
+gradient paths. Dropout regularizes training; instance normalization changes
+activation scaling. These mechanisms are hypotheses for improved learning, not
+guarantees of better boundaries. Both models still process one slice at a time.
 
-To reproduce the private manifest and public aggregate report:
+Inputs have shape `[B,1,256,256]`; raw output logits have shape `[B,6,256,256]`.
+Inference uses six-class argmax without threshold tuning or postprocessing.
+Training uses cross-entropy plus the mean foreground soft-Dice loss:
+`L = CE + mean_c(1 - (2*sum(p_c*y_c)+1e-6)/(sum(p_c)+sum(y_c)+1e-6))`,
+where c ranges over labels 1-5 and sums cover the batch and spatial grid.
+Targets remain integer channels for CE and become one-hot inside the Dice term.
 
-```bash
-python prepare_course_manifest.py
-```
+| Setting | Both formal runs |
+|---|---|
+| Initialization / budget | Fresh initialization; 20 epochs; 57,300 updates; no pilot resume |
+| Optimization | Adam, learning rate 0.001; batch 4; float32 |
+| Randomness / augmentation | Seed 3710; no augmentation; four CPU threads, zero loader workers |
+| Selection | Lowest validation CE + foreground soft-Dice loss; ties retain earlier epoch |
+| Held-out test | Same frozen split and selected checkpoints; no subsequent fitting or model changes |
 
-An identical rerun leaves the manifest unchanged; different content at the same
-manifest path is rejected. Use the same CSV and label dictionary for both models.
+U-Net selected epoch 5; Improved selected epoch 11. Validation loss plateaus and
+fluctuates while training loss keeps falling; longer training was not uniformly
+beneficial. Training metrics accumulate during updates, not in a separate final
+train-set evaluation. Reloaded predictions agreed exactly, but PyTorch warned
+that CUDA cross-entropy can be nondeterministic: fixed seeds do not guarantee
+bitwise-identical retraining. Architecture, optimizer and preprocessing were not
+changed after observing test results.
 
-Use a private CSV with `image,mask,patient_id,split`, following the fictional
-[example](manifest.example.csv). Relative paths resolve against the CSV directory.
-Each patient, including repeated scans/slices, must occur in exactly one split.
-The loader rejects patient and resolved-path reuse across splits. Identity still
-depends on correct supplied metadata; copied file contents are not hash-deduplicated.
+![U-Net training curves](figures/real_unet_20ep_curves.png)
 
-Only true 2D NIfTI arrays or `(H,W,1)` arrays are accepted. Image and mask shape,
-affine alignment, finite values and integer labels are checked. An explicit
-`--label-values` list fixes the mapping from raw labels to model channels, with
-background `0` first. Unknown labels fail. `--prostate-label` must be confirmed
-from the dataset documentation: nonzero does not automatically mean prostate.
+![Improved U-Net training curves](figures/real_improved_unet_20ep_curves.png)
 
-Images receive per-slice nonzero-voxel z-score normalization, clipped to [-5,5].
-Zero padding stays zero. New training runs default to `--resize-mode pad`:
-images are resized bilinearly and masks by nearest neighbour with the same
-aspect-preserving scale, then centered in a square with zero image/background
-mask padding. Use `--image-size 256 --resize-mode pad` for the acquired course
-slices: both 256 x 128 and 256 x 144 retain every original array pixel, with
-only horizontal padding added. This preserves array proportions, not verified
-physical spacing. `--resize-mode stretch` retains the earlier square-stretch
-behavior; checkpoints without this setting still use stretch when reloaded.
-The mode is saved in the checkpoint and reused by prediction.
-Optional flips transform both together and
-apply only to training data. No validation/test normalization statistics are fitted.
+## 3. Held-out overlap and boundary results
 
-Training uses cross-entropy plus mean foreground soft Dice loss. Targets are
-integer class indices; the Dice term constructs one-hot targets internally.
-Reported Dice/IoU pool pixels and return `null` when both prediction and truth
-are empty for a class. This is not yet patient-averaged clinical evaluation.
-Boundary F1 uses a two-pixel Chebyshev tolerance on the evaluated grid, not mm.
-Patient-level reporting and anatomically verified apex/base analysis remain
-post-midpoint work, dependent on metadata.
+Dice is `2TP/(2TP+FP+FN)` and IoU is `TP/(TP+FP+FN)` from integer confusion
+counts. Both-empty classes are undefined, excluded with counts reported;
+one-empty classes score zero. Pixel pooling sums all test counts first. Case
+averaging pools every week/slice within each Case and then weights Cases equally.
+Neither reconstructs a physical 3D volume. Complete scores and frozen provenance
+are in [U-Net test JSON](results/test_unet.json) and
+[Improved test JSON](results/test_improved_unet.json).
 
-Validation loss selects the checkpoint; test images are not used for selection.
-Real prediction must use the **unchanged training CSV**, verified against its
-recorded SHA256. Fix the split before tuning and leave the test set locked until
-model choices are finalized. A small midpoint pilot may use train/val only,
-explicitly reporting the missing final test evaluation.
+| Class | U-Net Dice | Improved Dice | U-Net IoU | Improved IoU |
+|---|---:|---:|---:|---:|
+| Background | 0.9994 | 0.9995 | 0.9988 | 0.9989 |
+| Body | 0.9833 | 0.9847 | 0.9671 | 0.9699 |
+| Bones | 0.9285 | 0.9368 | 0.8665 | 0.8811 |
+| Bladder | 0.9638 | 0.9647 | 0.9301 | 0.9318 |
+| Rectum | 0.8625 | 0.8691 | 0.7582 | 0.7685 |
+| Prostate | 0.8460 | 0.8495 | 0.7331 | 0.7384 |
+| Foreground macro Dice | 0.9168 | 0.9210 | - | - |
 
-## Run the project
+| Test Case | Slices | U-Net prostate Dice | Improved prostate Dice |
+|---|---:|---:|---:|
+| Case 01 | 420 | 0.8538 | 0.8538 |
+| Case 02 | 60 | 0.8453 | 0.8119 |
+| Case 03 | 60 | 0.8257 | 0.8562 |
+| Equal-Case mean | 540 total | 0.8416 | 0.8406 |
 
-The following commands run inside `recognition/hipmri_unet_qinyuan666` with the
-chosen **Python 3.10** environment active. Exact tested versions are in
-[requirements.txt](requirements.txt). On a new machine, create an isolated
-environment, install the course-approved PyTorch build, then the requirements;
-do not replace a shared/course environment blindly.
+Test Case aliases are not the corresponding validation Cases. Validation
+prostate pooled/Case means were 0.8291/0.8090 for U-Net and 0.8320/0.7934 for
+Improved. The test set contains only three Cases; hundreds of correlated slices
+must not be treated as independent patients. These single-seed differences do
+not establish statistical superiority.
+
+### Boundary precision and transition failures
+
+Boundary F1 uses foreground pixels touching background in an eight-neighborhood,
+with outside-image pixels treated as background. A predicted contour pixel
+matches truth within a two-pixel Chebyshev tolerance (a 5x5 square); precision
+and recall produce F1. This is not Euclidean surface Dice or HD95. Arithmetic
+means below use the same GT-positive slice population for both models, avoiding
+different inclusion counts when one model creates more absent-class false positives.
+
+| GT-positive class | Slices | U-Net boundary F1 | Improved boundary F1 |
+|---|---:|---:|---:|
+| Body | 540 | 0.9642 | 0.9697 |
+| Bones | 540 | 0.9390 | 0.9536 |
+| Bladder | 401 | 0.9804 | 0.9815 |
+| Rectum | 220 | 0.8646 | 0.8739 |
+| Prostate | 195 | 0.8675 | 0.8659 |
+
+| Prostate subgroup | Slices | U-Net boundary F1 | Improved boundary F1 |
+|---|---:|---:|---:|
+| Small GT area, 1-100 pixels | 28 | 0.6147 | 0.5925 |
+| Larger GT area, above 100 pixels | 167 | 0.9099 | 0.9118 |
+| First/last positive filename slice per Case/week | 18 | 0.5252 | 0.5079 |
+| Other positive slices | 177 | 0.9024 | 0.9024 |
+
+The 100-pixel grouping is a descriptive analysis choice, not an optimized
+deployment threshold. Endpoints are annotation transitions only. Their mean
+slice Dice is 0.2769/0.3112 despite whole-test pooled Dice above 0.84. Improved
+slightly benefits larger targets but worsens small-target boundary F1; this is
+consistent with smoothing/coarse-context limitations, not a causal ablation.
+
+Of 345 prostate-absent slices, U-Net predicts prostate on 16 and Improved on 21.
+If all defined slices are included, prostate boundary F1 is 0.8018 (211 slices)
+and 0.7818 (216 slices); different denominators are explicitly retained.
+Total prostate FP/FN pixels are 8,308/9,930 and 8,721/9,268 respectively.
+Prostate predictions overlap 542/307 GT bladder pixels and 289/1,004 GT rectum
+pixels (U-Net/Improved). Those are label-confusion counts, not measured wall
+penetration, dose effects or evidence of patient harm. The extra rectum-label
+confusion discourages an unqualified boundary-utility claim.
+
+[Full boundary record](results/test_boundary_analysis.json) includes empty-class
+counts and subgroups. Its recomputed overlap scores exactly match the frozen
+test evaluation. No new training or test-dependent threshold selection followed.
+
+## 4. Five failure autopsies
+
+These are five distinct slices from three test Cases, not five independent
+patients or representative average performance. A deterministic rule selects
+the lowest Improved prostate Dice on a positive slice in each Case, then the
+largest remaining Improved FN and FP counts; ties use manifest order. Both models
+are shown on every selected slice. Selection emphasizes failures, not wins.
+
+Each figure shows MRI, GT prostate, prediction and FP/FN overlay, with U-Net
+above Improved. White is prostate, red is false positive, blue is false negative.
+All panels share a crop covering the union of GT and both predictions with context;
+this is display-only and inference still uses the complete padded slice. Published
+figures use aliases without source identifiers, with explicit user authorization.
+
+### F1: complete loss of a five-pixel transition target
+
+Case 01 has five GT prostate pixels on an annotation endpoint. Both models
+predict none: Dice and boundary F1 are zero, FN=5. A very small foreground signal
+can disappear through repeated downsampling or ambiguous local appearance;
+this is a plausible mechanism, not proof of an anatomical location or labeling
+error. A high whole-Case Dice hides this complete local miss. Review the
+surrounding slice sequence rather than accepting an empty proposal automatically.
+
+![F1: both models miss the tiny target](figures/failure_F1.png)
+
+### F2: three-pixel target missed in a different Case
+
+Case 02 contains only three GT pixels at another annotation endpoint. Both
+models again return empty prostate (Dice/F1=0; FN=3). This recurrence across
+Cases supports a small-target weakness, although its pixel severity is tiny and
+annotation uncertainty is unresolved. Residual blocks and multiple heads do not
+guarantee recovery of weak features. Adjacent-slice and expert annotation review
+would be needed before interpreting this as a clinically meaningful miss.
+
+![F2: repeated tiny-target failure](figures/failure_F2.png)
+
+### F3: nearby false positive is not correct localization
+
+Case 03 has eight GT pixels at an endpoint. U-Net misses all eight and predicts
+36 nearby wrong pixels; Improved predicts nothing. Both Dice scores are zero.
+Nevertheless U-Net boundary F1 is 0.5 because its displaced contour lies within
+the two-pixel tolerance; Improved F1 is zero. This exposes a limitation of the
+boundary metric itself: tolerance can reward proximity without overlap. Retain
+both Dice and FP/FN images; an apparent boundary gain alone is not acceptable.
+
+![F3: displaced artifact versus empty prediction](figures/failure_F3.png)
+
+### F4: conservative contour on a larger target
+
+The 457-pixel target in Case 03 is not an annotation endpoint. U-Net has
+174 FN/15 FP pixels and Dice 0.7497; Improved has 188 FN/2 FP and Dice 0.7390.
+The blue band spans a substantial part of the GT perimeter: Improved reduces
+overreach but removes more true tissue. Local appearance and coarse shape bias
+are plausible triggers, not experimentally isolated causes. Review contour extent
+even on larger slices; eliminating FP alone is not an adequate acceptance rule.
+
+![F4: broad under-contouring despite a substantial target](figures/failure_F4.png)
+
+### F5: enlarged contour and organ-label confusion
+
+Case 02 has a 97-pixel target, fully covered by both predictions, but U-Net adds
+216 FP pixels and Improved adds 293. Dice falls from 0.4732 to 0.3984; boundary
+F1 is 0.3304/0.3158. Improved's excess includes five GT rectum pixels. The red
+ring shows over-expansion into surrounding tissue despite zero FN. Local tissue
+ambiguity or an overly broad learned shape may contribute. Review prostate/OAR
+interfaces explicitly; this is not evidence of a measured millimetre wall breach.
+
+![F5: over-expansion with false-positive ring](figures/failure_F5.png)
+
+## 5. Resource cost and operating recommendation
+
+Hardware: NVIDIA GeForce RTX 4070 Laptop GPU, 8 GB, Windows, Python 3.10.19,
+PyTorch 2.5.1 with CUDA 11.8, float32. Training peaks below are PyTorch allocated
+memory, excluding driver and other processes. Timing observations are not
+controlled power/thermal benchmarks.
+
+| Real six-class measurement | U-Net | Improved U-Net |
+|---|---:|---:|
+| Trainable parameters | 1,940,902 | 3,186,802 |
+| Peak training allocated / reserved GiB | 0.296 / 0.420 | 0.648 / 0.855 |
+| Training + per-epoch validation/checkpoint minutes | 51.70 | 66.70 |
+| Recorded batch-one model inference median ms | 2.000 | 5.149 |
+
+Training time excludes initial validation and final reload/inference checks.
+Batch-one inference used five warmups and 20 synchronized repeats, excluding
+I/O/preprocessing. Those separate sessions cannot establish a universal speed ratio.
+
+Per-Case timing was repeated after the user stopped gaming. The initial
+contended measurements remain archived. Each model/Case uses three repeats,
+five warmup forwards, batch 4 and alternating execution order. Median seconds:
+
+| Test Case / slices | U-Net pipeline | Improved pipeline | U-Net forward | Improved forward |
+|---|---:|---:|---:|---:|
+| Case 01 / 420 | 1.607 | 1.854 | 0.492 | 0.765 |
+| Case 02 / 60 | 0.209 | 0.255 | 0.057 | 0.104 |
+| Case 03 / 60 | 0.204 | 0.252 | 0.058 | 0.099 |
+
+Pipeline timing includes image reads, preprocessing, transfers, argmax, CPU
+predictions and finite/synchronization checks; excludes loading the model, warmup
+and output export. Forward sums synchronized GPU forwards only. Case 01 includes
+seven weeks, so it is not one scan. No GT files are read for timing. OS cache is
+not flushed; absence of all background GPU work was not continuously verified.
+Predictions match across repeats and the contended run. Full ranges and scope:
+[current benchmark](results/test_case_benchmark_game_closed.json),
+[benchmark report](CASE_BENCHMARK.md).
+
+**Recommendation:** keep standard U-Net as the resource-conscious research
+default. Improved offers small aggregate overlap gains but more parameters and
+memory, longer observed inference, no common-population prostate boundary gain,
+and more prostate-absent FP slices. Neither should draft contours for automatic
+acceptance. Require specialist review of every case, prioritizing tiny targets,
+annotation-transition regions, displaced islands, broad under-contours and OAR
+interfaces. A risk flag based on these patterns would itself need validation;
+the GT-derived 100-pixel split cannot be used directly at deployment.
+
+A next research experiment could add adjacent-slice context or a 3D baseline,
+but should first recover physical spacing/orientation and use a new development/
+evaluation plan because this test set has now been inspected. Additional seeds,
+larger independent cohorts, expert contour assessment and physical-distance
+metrics would be needed before stronger clinical-utility conclusions. This
+project does not demonstrate that 3D context is cost-effective; it shows the
+limits of the chosen 2D modification.
+
+## 6. Installation, reproduction and code map
+
+Use Python 3.10.19. Runtime pins: torch 2.5.1, numpy 1.26.4, matplotlib 3.10.7,
+Pillow 10.4.0 and nibabel 5.3.2. Report pins add reportlab 4.4.4, pypdf 6.1.1 and
+PyMuPDF 1.26.4. Install a PyTorch build appropriate for the machine; these runs
+used CUDA 11.8. Commands below run from this project directory in an activated
+environment. The workspace's `.venv` is local convenience, not a distributable dependency.
 
 ```bash
 python -m pip install -r requirements.txt
 python -m unittest discover -s tests -v
 ```
 
-This Windows workspace already has a root `.venv` using the existing DQN2
-environment's packages plus isolated NIfTI/report dependencies. Its tested
-PyTorch is 2.5.1, CUDA runtime 11.8, Python 3.10.19, on an RTX 4070 Laptop GPU.
-To run its tests without activating an environment, from repository root:
-
-```powershell
-& .\.venv\Scripts\python.exe -m unittest discover -s recognition/hipmri_unet_qinyuan666/tests -v
-```
-
-Reproduce synthetic checks in **new output directories** (training refuses to
-overwrite an existing checkpoint):
+Obtain authorized course data and place the six directories beneath
+`private_data/keras_slices_data`. Raw NIfTI files, source IDs, private manifests
+and trained weights are intentionally excluded from Git. Authorized users can
+retrain with the commands below; no public pretrained-weight download is claimed.
+The local selected weights are `runs/real_unet_20ep_s3710/best.pt` and
+`runs/real_improved_unet_20ep_s3710/best.pt`. Hashes are in [test protocol](TEST_PROTOCOL.md).
 
 ```bash
-python train.py --model unet --synthetic --epochs 6 --samples 32 --image-size 128 --batch-size 4 --seed 3710 --device cuda --output runs/reproduce_unet
-python train.py --model improved_unet --synthetic --epochs 6 --samples 32 --image-size 128 --batch-size 4 --seed 3710 --device cuda --output runs/reproduce_improved_unet
-python predict.py --checkpoint runs/reproduce_unet/best.pt --synthetic --device cuda --limit 3 --output runs/reproduce_unet/predictions
-python predict.py --checkpoint runs/reproduce_improved_unet/best.pt --synthetic --device cuda --limit 3 --output runs/reproduce_improved_unet/predictions
+python audit_course_download.py --root private_data/keras_slices_data --output runs/reproduce_audit.json --private-output private_data/source_metadata/reproduce_audit_private.json
+python prepare_course_manifest.py --audit-summary runs/reproduce_audit.json --audit-private private_data/source_metadata/reproduce_audit_private.json --report runs/reproduce_preparation.json
+python train.py --model unet --manifest private_data/manifests/course_v1.csv --label-values 0 1 2 3 4 5 --prostate-label 5 --image-size 256 --resize-mode pad --base-channels 16 --batch-size 4 --epochs 20 --lr 0.001 --seed 3710 --device cuda --output runs/reproduce_unet
+python train.py --model improved_unet --manifest private_data/manifests/course_v1.csv --label-values 0 1 2 3 4 5 --prostate-label 5 --image-size 256 --resize-mode pad --base-channels 16 --batch-size 4 --epochs 20 --lr 0.001 --seed 3710 --device cuda --output runs/reproduce_improved
 ```
 
-Use `--device cpu` if CUDA is unavailable; timings will differ. Each training run
-saves `best.pt`, configuration, JSON summary and training curves. Prediction saves
-an input/ground-truth/prediction/error grid. Checkpoints and raw run directories
-are excluded from Git; reproduce weights using the commands above.
+Use new run directories and the unchanged frozen manifest; do not overwrite
+published experiments. On another data layout, regenerate the private manifest
+and train new checkpoints: arbitrary manifest edits are correctly rejected by
+existing checkpoints. Model-only code also runs on CPU with `--device cpu`.
 
 ```bash
-python profile_resources.py --model unet --device cuda --output runs/reproduce_resource_unet.json
-python profile_resources.py --model improved_unet --device cuda --output runs/reproduce_resource_improved_unet.json
+python evaluate_cases.py --checkpoint runs/reproduce_unet/best.pt --manifest private_data/manifests/course_v1.csv --output runs/reproduce_unet/test --device cuda --split test
+python evaluate_cases.py --checkpoint runs/reproduce_improved/best.pt --manifest private_data/manifests/course_v1.csv --output runs/reproduce_improved/test --device cuda --split test
+python predict.py --checkpoint runs/reproduce_improved/best.pt --manifest private_data/manifests/course_v1.csv --split test --limit 4 --device cuda --output runs/reproduce_predictions
+python analyze_boundaries.py --checkpoints runs/reproduce_unet/best.pt runs/reproduce_improved/best.pt --manifest private_data/manifests/course_v1.csv --output runs/reproduce_boundaries
+python render_failure_details.py --analysis runs/reproduce_boundaries --checkpoints runs/reproduce_unet/best.pt runs/reproduce_improved/best.pt --manifest private_data/manifests/course_v1.csv --output runs/reproduce_failure_crops
+python benchmark_cases.py --checkpoints runs/reproduce_unet/best.pt runs/reproduce_improved/best.pt --manifest private_data/manifests/course_v1.csv --output runs/reproduce_timing
 ```
 
-The first real-data baseline pilot completed with the following configuration.
-Its original output is `runs/real_unet_pilot`; use a new output directory to reproduce it:
+`predict.py` is the reload-and-inference test driver; its first four slices are
+not guaranteed to contain prostate. The failure renderer uses the explicit
+post-hoc selection rule above. With no course data, verify the software pipeline:
 
 ```bash
-python train.py --model unet --manifest private_data/manifests/course_v1.csv --label-values 0 1 2 3 4 5 --prostate-label 5 --image-size 256 --resize-mode pad --batch-size 4 --epochs 1 --device cuda --output runs/real_unet_pilot_reproduce
+python train.py --synthetic --model unet --epochs 1 --samples 8 --image-size 64 --base-channels 4 --device cpu --output runs/synthetic_demo
+python predict.py --synthetic --checkpoint runs/synthetic_demo/best.pt --device cpu --output runs/synthetic_demo_predictions
 ```
 
-Use a new output directory for each experiment. Six-class baseline GPU measurements
-are in the pilot summaries for both models; controlled timing comparison remains pending.
-[RANGPUR.md](RANGPUR.md) remains available for optional remote compute.
+| Module | Responsibility |
+|---|---|
+| modules.py | Independent U-Net and residual Improved U-Net architectures |
+| dataset.py | NIfTI loading, geometry/label validation, normalization and split isolation |
+| train.py | Loss, training/validation, best checkpoint, curves and resource measurements |
+| predict.py | Reload checkpoint, predict, save inputs/GT/predictions/error overlays |
+| metrics.py | Dice/IoU, CE + soft Dice, pixel-grid boundary F1 |
+| evaluate_cases.py | Explicit val/test evaluation, per-Case and pooled scores |
+| analyze_boundaries.py / render_failure_details.py | Fixed-model boundary analysis and failure visualizations |
+| benchmark_cases.py | Image-only, repeated full-Case inference timing |
+| audit_course_download.py / prepare_course_manifest.py | Data checks and immutable split-manifest preparation |
+| build_report_pdf.py | Export this README, including figures, to PDF |
 
-Seeds and split configurations are recorded. CUDA deterministic settings are
-requested with `warn_only=True`; this PyTorch build warns that its CUDA
-cross-entropy reduction is not deterministic. Exact retraining equality across
-runs/platforms is not guaranteed. The recorded exact agreement is specifically
-**saved-checkpoint reload inference**, not an assertion of bitwise identical retraining.
+Verification: 73 tests passed across model gradients, loss/metric edge cases,
+synthetic and artificial-NIfTI training/reload, split isolation, corrupt data,
+manifest hashes, benchmark coverage and failure selection. Real-data verification
+additionally checked all pairs, exact selected-checkpoint reload, unchanged
+weights, matching pooled/Case scores, matching boundary-run test scores and
+repeat prediction hashes. No clinical validation is claimed.
 
-## Recorded preliminary evidence
+Detailed stage records remain available in [training plan](TRAINING_PLAN.md),
+[baseline report](FORMAL_UNET.md), [Improved report](FORMAL_IMPROVED_UNET.md),
+[test report](TEST_RESULTS.md) and [data access notes](DATA_ACCESS.md).
+Historical claims there describe their original stages; this report is the final synthesis.
 
-The **Improved U-Net one-epoch pilot** completed on all 11,460 training and 660
-validation slices using the same manifest, labels, preprocessing, batch size,
-base width, learning rate, augmentation setting and seed as the baseline pilot.
-Validation prostate Dice/IoU were **0.7919 / 0.6554** (pixel pooled), with equal-Case
-mean Dice **0.7625** and foreground macro Dice **0.8561**. For context, the baseline
-one-epoch scores were 0.7244 pooled and 0.7044 Case mean. This is an early observation,
-not the final 20-epoch comparison or evidence of test-set performance.
+## 7. Historical one-page feasibility review
 
-The six-class Improved U-Net has **3,186,802 parameters**. Training plus post-epoch
-validation and saving took **451.92 seconds**; peak allocator usage was **0.648 GiB
-allocated / 0.855 GiB reserved**. Batch-one model-only median inference was
-**5.803 ms**, excluding I/O/preprocessing. These are separate laptop observations,
-not controlled speed comparisons. Reload was exact and Case evaluation reproduced
-the saved pooled metrics. A 20-epoch run is provisionally estimated at **151 minutes**.
-
-See [pilot report and local prediction paths](IMPROVED_UNET_PILOT.md),
-[training record](results/pilot_improved_unet.json), [Case scores](results/pilot_improved_unet_cases.json)
-and [paired one-epoch Case chart](figures/real_pilots_case_comparison.png).
-The same four ground-truth-selected positive slices used for the formal baseline
-were inspected. Local under-segmentation remains: the selected Case 03 slice has
-Dice 0.4476 with 113 false-negative pixels. Selected-slice scores are not Case scores.
-
-The **20-epoch formal U-Net baseline** is complete. Under the fixed plan, epoch 5
-had the lowest validation loss (0.4174); epoch 20 loss was 0.4392. The selected
-checkpoint achieved validation prostate Dice/IoU **0.8291 / 0.7081** when pooling
-pixels, and equal-Case mean prostate Dice **0.8090** (four Cases, range
-**0.7586–0.8666**). Foreground macro Dice was **0.9061**. These are validation
-results; the test-set target remains unassessed. Later epochs did not improve the
-selection loss, so additional training was not continuously beneficial.
-
-Training, per-epoch validation and checkpoint saving took **51.70 minutes**.
-Peak PyTorch allocator usage was **0.296 GiB allocated / 0.420 GiB reserved**;
-batch-one model-only median inference was **2.000 ms**. Timings exclude initial
-validation and final reload/inference checks where specified, and GPU clock/power
-varied during this laptop run. They are not controlled cross-model benchmarks or
-per-Case inference timings. Reload was exact; independently recomputed Case
-confusions reproduce the recorded pooled validation metrics exactly.
-
-See [formal report and local output paths](FORMAL_UNET.md),
-[full epoch history](results/formal_unet.json), [Case scores](results/formal_unet_cases.json)
-and [training curves](figures/real_unet_20ep_curves.png). Four local prostate-positive
-examples were selected by median ground-truth area within each validation Case,
-not by prediction quality; these are illustrations, not the final failure-case analysis.
-
-The **20-epoch Improved U-Net run** is also complete. Epoch 11 had the lowest
-validation loss (0.415270). Prostate pooled Dice/IoU were **0.8320 / 0.7123**,
-equal-Case mean Dice **0.7934**, and foreground macro Dice **0.9026**.
-Pooled prostate Dice slightly exceeded the baseline's 0.8291, while equal-Case
-mean fell from 0.8090: Case 01/04 improved, Case 02/03 worsened. Case 03 fell
-from 0.7586 to 0.6872. Different aggregation weights explain the different trends;
-the results do not establish overall superiority of the improved architecture.
-
-The run took **66.70 minutes**, with **0.648 GiB allocated / 0.855 GiB reserved**
-peak allocator memory and **5.149 ms** batch-one model-only median inference.
-These are single-run laptop observations, not controlled timing comparisons.
-Completed history, minimum-loss selection, checkpoint/data/source hashes and
-pooled/Case agreement were verified. The same four baseline example slices were
-inspected; the selected Case 03 slice still shows under-segmentation (Dice 0.5965).
-See [formal comparison and limitations](FORMAL_IMPROVED_UNET.md),
-[full history](results/formal_improved_unet.json),
-[Case scores](results/formal_improved_unet_cases.json) and
-[training curves](figures/real_improved_unet_20ep_curves.png).
-
-### Held-out test results
-
-The [test protocol](TEST_PROTOCOL.md) was committed as `929bd24` before test scoring.
-The same validation-selected checkpoints (epochs 5 / 11) were evaluated without
-further fitting, threshold tuning or postprocessing. All 540 test slices and three
-Cases were included. Checkpoint hashes remained unchanged; private confusion
-counts reproduce the published summaries exactly.
-
-| Test metric | U-Net | Improved U-Net |
-|---|---:|---:|
-| Prostate pooled Dice | 0.8460 | 0.8495 |
-| Prostate pooled IoU | 0.7331 | 0.7384 |
-| Equal-Case mean prostate Dice | 0.8416 | 0.8406 |
-| Foreground macro Dice | 0.9168 | 0.9210 |
-
-Both aggregation methods exceed 0.75 for both models. All three individual
-prostate Case scores also exceed 0.75. Improved U-Net slightly improves pooled
-overlap, while equal-Case mean prostate Dice is nearly tied and marginally lower.
-Only three test Cases and one seed are available; no statistical superiority,
-boundary improvement or clinical performance is established.
-Test Case aliases refer to different subjects from validation Case aliases.
-See [per-class and per-Case report](TEST_RESULTS.md),
-[U-Net full scores](results/test_unet.json) and
-[Improved U-Net full scores](results/test_improved_unet.json).
-
-### Per-Case inference time
-
-After the user reported stopping the game, both fixed models were timed again on the three complete test Cases, with batch 4,
-float32, four CPU threads and five warmup forwards before each of three repeats.
-Model order alternated. The following seconds are medians across repeats:
-
-| Test Case | Slices | U-Net image-to-mask | Improved image-to-mask | U-Net forward only | Improved forward only |
-|---|---:|---:|---:|---:|---:|
-| Case 01 | 420 | 1.607 | 1.854 | 0.492 | 0.765 |
-| Case 02 | 60 | 0.209 | 0.255 | 0.057 | 0.104 |
-| Case 03 | 60 | 0.204 | 0.252 | 0.058 | 0.099 |
-
-Image-to-mask timing includes image I/O, preprocessing, transfers, forward, argmax,
-CPU predictions, finite checks and synchronization; it excludes model loading,
-warmup and output export. Ground-truth files are not loaded. Forward-only timing
-sums synchronized model forwards on device-resident batches. All weeks within
-a Case are included, so the 420-slice Case is not a single 60-slice scan.
-Predictions were identical across repeats and matched the initial contended run.
-The current medians are lower for U-Net on all three Cases. The initial measurements
-were affected by user-confirmed gaming or other GPU work and remain historical
-evidence only. Game closure is user-reported; absence of all other GPU work was
-not continuously verified. OS cache and laptop power/temperature remain limitations.
-Frozen checkpoints and test scores are unchanged.
-See [ranges, limitations and reproduction](CASE_BENCHMARK.md) and
-[current timing records](results/test_case_benchmark_game_closed.json), with
-[initial contended records](results/test_case_benchmark.json) retained. Four targeted tests passed.
-
-The records below retain the preceding pilot and synthetic checks as historical evidence.
-
-The historical midpoint CPU suite passed **41 tests**; see the archived
-[verification record](results/verification.json). After adding acquisition and
-padding checks, the expanded **52-test regression suite** passed; four new
-manifest tests then passed separately. Tests use artificial fixtures. Real NIfTI
-input checks (without a model run) are in [results/preprocessing_check.json](results/preprocessing_check.json).
-
-The real-data pilot used all 11,460 training and 660 validation slices, batch 4,
-base width 16, six classes, padding to 256 x 256, Adam at 0.001 and seed 3710,
-without augmentation. Validation loss fell from 2.6326 to 0.5504. After one epoch,
-pooled prostate Dice/IoU were **0.7244 / 0.5679**, and macro foreground Dice was
-**0.8215**. Training plus post-epoch validation and checkpoint saving took
-**129.56 seconds**; peak allocator memory was **0.296 GiB allocated / 0.420 GiB reserved**.
-The six-class model has **1,940,902 parameters**; batch-one model-only median
-inference was **2.072 ms**. Checkpoint reload was exact. Initial validation and
-final reload/inference checks are outside the training timer.
-
-See [full pilot notes and private output locations](REAL_DATA_PILOT.md),
-[machine-readable evidence](results/pilot_unet.json) and
-[per-class validation chart](figures/real_pilot_unet_validation.png).
-These scores pool pixels across slices, include padded background and are not
-patient-averaged or test-set scores. One epoch does not establish convergence
-or achievement of the assignment's test-set target. The first four validation
-examples contain no prostate in either truth or prediction, so their example Dice
-is undefined; the aggregate prostate score above uses the complete validation set.
-No test-set model evaluation was performed.
-
-The [Case evaluator](evaluate_cases.py), defaulting to validation, pools confusion counts
-within each manifest Case across all its weeks and slices, then averages defined
-Case scores equally. Both-empty classes are undefined and excluded with counts
-reported; one-empty classes score zero. Five targeted tests cover weighting,
-empty classes, provenance, output preservation and actual NIfTI validation-only I/O;
-the nine existing metric tests also pass.
-
-```bash
-python evaluate_cases.py --checkpoint runs/real_unet_pilot/best.pt --manifest private_data/manifests/course_v1.csv --output runs/real_unet_pilot/case_validation_reproduce --device cuda --batch-size 4
-```
-
-Use a new output directory. It contains `summary.json` with anonymous Case aliases
-and `case_details_private.json` with original Case identifiers and confusion counts;
-keep the latter under ignored `runs/`. The checkpoint fixes the label mapping and
-preprocessing, and a changed manifest is rejected. Explicit `--split test` now supports
-the frozen final evaluation. Seven evaluator tests cover split isolation and unchanged
-checkpoint bytes, alongside nine metric tests and three orchestration regression tests.
-
-For this pilot, all four validation Cases have defined prostate scores. Their
-equal-Case mean Dice is **0.7044** (range **0.6366–0.7938**), compared with pooled
-Dice **0.7244**. One Case has 480 slices and the other three have 60 each, so the
-two aggregations weight the data differently. Recomputed pooled metrics match
-the original pilot exactly. These are validation results, not final test evidence;
-Case grouping follows the dataset convention and weeks are not averaged separately.
-See [Case results](results/pilot_unet_cases.json) and the
-[fixed next-stage experiment plan](TRAINING_PLAN.md).
-
-Requirement clarification: the task PDF, page 6, sets prostate test-set Dice >= 0.75
-for both selected HipMRI 2D models; it does not explicitly prescribe pixel pooling
-versus an equal-patient mean. We report both aggregations transparently. The earlier
-midpoint review below chose a mean-patient target as a project acceptance criterion;
-that more specific averaging rule should not be attributed to the task wording.
-
-The remaining summaries and figures in this section are historical **synthetic engineering evidence**.
-The original training implementation is
-identified in each archived summary's provenance.
-
-| Synthetic check: 128×128, 32 train / 8 val, 6 epochs | U-Net | Improved U-Net |
-|---|---:|---:|
-| Initial validation loss | 1.4524 | 1.6496 |
-| Best validation loss | 0.0274 | 0.0407 |
-| Selected epoch | 5 | 6 |
-| Checkpoint reload exact | Yes | Yes |
-
-Sources: [baseline summary](results/smoke_unet.json),
-[improved summary](results/smoke_improved_unet.json).
-
-![Synthetic baseline training curves](figures/synthetic_curves_unet.png)
-![Synthetic improved-model training curves](figures/synthetic_curves_improved_unet.png)
-
-Separate resource probes: 256×256, base width 16, training batch 4, float32,
-Adam, **two output classes**. Each model ran in its own process. Three training
-warmups and ten measured steps; batch-one inference used five warmups and twenty
-repeats with CUDA synchronization. Short laptop timings vary between runs.
-
-| Resource probe | U-Net | Improved U-Net |
-|---|---:|---:|
-| Parameters | 1,940,834 | 3,186,342 |
-| Peak allocated memory (GiB) | 0.290 | 0.639 |
-| Peak reserved memory (GiB) | 0.438 | 0.820 |
-| Median training step (ms) | 21.765 | 41.311 |
-| Median batch-one model inference (ms) | 1.395 | 4.224 |
-
-Sources: [baseline resource probe](results/resource_unet.json),
-[improved resource probe](results/resource_improved_unet.json).
-Memory is PyTorch allocator usage, not total device usage. Inference excludes
-disk access and preprocessing. The six-class real baseline was measured separately
-above, as was the six-class Improved U-Net pilot. Controlled cross-model timing
-and complete per-Case inference measurements remain to be done.
-
-Prediction examples use a separate synthetic seed (5710), distinct from training
-and validation. These are illustration examples, not clinical failure cases:
-
-![Synthetic baseline prediction examples](figures/synthetic_predictions_unet.png)
-![Synthetic improved-model prediction examples](figures/synthetic_predictions_improved_unet.png)
-
-**Current next step:** preserve the completed validation/test comparisons and
-per-Case inference measurements, then add boundary/failure analysis.
-See [TRAINING_PLAN.md](TRAINING_PLAN.md) for the completed run and reproduction commands.
-
-The [background runner](run_improved_experiment.py) preserves the fixed configuration,
-records source/manifest hashes, logs each subprocess and evaluates validation only
-after training succeeds. It refuses an existing output directory and records failures;
-it does not implement checkpoint resume. Three targeted orchestration tests passed.
-The real baseline fits the local GPU and completes training, reload and prediction.
-There is no evidence yet that the improved model benefits real prostate
-boundaries. A final recommendation requires matched patient splits, actual
-segmentation results and 3–5 genuine failure analyses.
-
-## Written midpoint feasibility review
-
-The following is the same review as the standalone one-page PDF. It records the
-midpoint state before the subsequent original-data acquisition; current access
-and label findings are documented in DATA_ACCESS.md.
+The following is the original midpoint review, not a claim that its preliminary
+state still applies. Its editable source and one-page rendering remain
+[feasibility_review.md](feasibility_review.md) and [feasibility_review.pdf](feasibility_review.pdf).
+Final acceptance outcomes and the assignment's aggregation clarification are
+reported above. The historical synthetic parameter counts used two output classes;
+final resource measurements use six.
 
 <!-- FEASIBILITY_START -->
 
@@ -569,63 +490,62 @@ Assessment: `COMP3710_Report_2026_draft_v2.2.pdf`, Sections 2.2 and 3.
 
 <!-- FEASIBILITY_END -->
 
-To regenerate the PDF from its Markdown source:
+## 8. Data acknowledgement and references
+
+Data were provided by HipMRI Study: Dowling and Greer, *Labelled weekly MR images
+of the male pelvis*, CSIRO Data Access Portal, version 2 [3]. Course-preprocessed
+slices were obtained from the COMP3710 Rangpur directory. We acknowledge the
+underlying imaging/contouring work [4]. The course terms prohibit participant
+identification/contact and commercial use, require acknowledgement and a listed
+publication citation, and do not guarantee data correctness. The original
+release's separately documented CC BY-NC-ND 4.0 licence is recorded in
+[DATA_ACCESS.md](DATA_ACCESS.md). The report distributes only authorized derived
+illustrations and aggregate records; raw datasets, original IDs and weights remain
+outside Git. Figures are research analysis, not clinical recommendations.
+
+1. Ronneberger, Fischer and Brox (2015). [U-Net: Convolutional Networks for Biomedical Image Segmentation](https://arxiv.org/abs/1505.04597).
+2. Isensee et al. (2018). [Brain Tumor Segmentation and Radiomics Survival Prediction: Contribution to the BRATS 2017 Challenge](https://arxiv.org/abs/1802.10508).
+3. Dowling and Greer (2021). [Labelled weekly MR images of the male pelvis, CSIRO, version 2](https://doi.org/10.25919/45t8-p065).
+4. Dowling et al. (2015). [Automatic Substitute Computed Tomography Generation and Contouring for MRI-Alone External Beam Radiation Therapy From Standard MRI Sequences](https://doi.org/10.1016/j.ijrobp.2015.08.045). IJROBP 93(5), 1144-1153.
+5. Course assessment: `COMP3710_Report_2026_draft_v2.2.pdf`, Sections 2.2, 3, 4-6 and checklist.
+
+## 9. Artificial Intelligence Usage Disclosure
+
+OpenAI Codex assisted with assessment interpretation, planning, repository setup,
+implementation of data/model/training/evaluation code, tests, experiment execution,
+debugging, figure generation, result checking, report writing and PDF export.
+This includes both synthetic pilots, real-data pilots, formal 20-epoch runs,
+frozen test evaluation, repeated timing, boundary analysis and failure selection.
+The architectures were checked against their cited papers; implementation variants
+are stated explicitly. No fellow-student or prior-year PR implementation was copied.
+
+Verification combined automated tests and empirical checks listed above, inspection
+of prediction/FP/FN figures, and PDF rendering. Known errors were corrected openly:
+the assignment did not prescribe patient-mean Dice; earlier midpoint wording was
+a project criterion. Timing collected during gaming was marked as contended and
+repeated, with both records retained. Improved performance was not presumed, and
+its unmet boundary-gain target is reported. AI-assisted hypotheses about failure
+causes are distinguished from observed counts and images; no causal ablation or
+clinical validation was performed.
+
+The student remains responsible for understanding, reviewing and defending all
+code, formulas, metadata and claims. Automated checks and AI assistance do not
+replace that responsibility. Source data and patient identifiers were not sent
+to an external image-generation service. The student explicitly authorized
+publication of the five anonymized derived MRI figures and this illustrated report.
+
+## 10. Submission and review follow-up
+
+The code and report belong on `qinyuan666/PatternAnalysis-2026:topic-recognition`,
+with the course PR targeting `shakes76/PatternAnalysis-2026:topic-recognition`.
+The PDF is generated directly from this README and its figures:
 
 ```bash
 python -m pip install -r requirements-report.txt
-python build_review_pdf.py
+python build_report_pdf.py --source README.md --output final_report.pdf
 ```
 
-The renderer checks that the result is exactly one A4 page. After changing the
-source, also update its embedded copy above and inspect the rendered PDF.
-
-## Data acknowledgement
-
-Data were provided by HipMRI Study via the CSIRO Data Access Portal:
-Dowling and Greer, *Labelled weekly MR images of the male pelvis* [4].
-The original release and COMP3710 course-preprocessed slice files have been
-acquired locally, with acquisition checks described above.
-The study's acquisition publication is cited in [5], as listed in the course
-data-use notice and the official collection metadata.
-
-The observed course notice requires source acknowledgement and a relevant listed
-publication citation in public results, prohibits commercial use and attempts to
-identify or contact participants, and provides no guarantee of data correctness.
-The original release's separate CC BY-NC-ND 4.0 licence is recorded in
-[DATA_ACCESS.md](DATA_ACCESS.md). Raw data and individual filenames remain outside Git.
-
-## Artificial Intelligence Usage Disclosure
-
-OpenAI Codex assisted with interpreting the assessment, configuring the GitHub
-fork, planning and implementing the models/data pipeline, writing tests,
-debugging, resource measurements, plotting, report drafting and PDF preparation.
-Architecture choices were checked against the primary papers. Verification
-includes patient/label checks, artificial NIfTI integration tests for both models,
-loss/metric edge cases, finite gradients, checkpoint reloads, manifest integrity,
-measured synthetic runs and a rendered one-page PDF inspection. Codex also assisted
-with both one-epoch pilots, both 20-epoch real-data runs, Case validation, frozen test evaluation, result
-summaries, prediction checks and repeated per-Case inference measurements. Training completed with finite-loss/gradient guards;
-the selected checkpoint reloaded exactly and Case aggregates matched pooled metrics.
-
-The student must personally understand and review the code, verify real-data
-metadata and results, and accurately maintain this disclosure. Automated tests
-do not replace that responsibility. No copied student/prior-year PR code is used;
-architectural sources are cited below and in model docstrings. Real-data evidence
-includes the documented validation and held-out test experiments; clinical validity
-and completion of all final deliverables are not claimed.
-
-## References
-
-1. Ronneberger, Fischer and Brox (2015). *U-Net: Convolutional Networks for
-   Biomedical Image Segmentation*. https://arxiv.org/abs/1505.04597
-2. Isensee et al. (2018). *Brain Tumor Segmentation and Radiomics Survival
-   Prediction: Contribution to the BRATS 2017 Challenge*.
-   https://arxiv.org/abs/1802.10508
-3. Course assessment: `COMP3710_Report_2026_draft_v2.2.pdf`, Sections 2.2 and 3.
-4. Dowling and Greer (2021). *Labelled weekly MR images of the male pelvis*.
-   CSIRO Data Access Portal, Version 2. https://doi.org/10.25919/45t8-p065
-5. Dowling et al. (2015). *Automatic Substitute Computed Tomography Generation
-   and Contouring for Magnetic Resonance Imaging (MRI)-Alone External Beam
-   Radiation Therapy From Standard MRI Sequences*. International Journal of
-   Radiation Oncology, Biology, Physics, 93(5), 1144–1153.
-   https://doi.org/10.1016/j.ijrobp.2015.08.045
+Submit `final_report.pdf` through the course Turnitin assessment. A GitHub PR
+does not replace that upload. After teaching-team feedback is released, review
+the comments, commit requested changes and respond within the course's specified
+window. Those future interactions cannot be claimed complete in advance.
