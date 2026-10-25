@@ -13,9 +13,9 @@ real-data capacity/stability pilot and a fresh 20-epoch run. Both formal runs ha
 verified checkpoints, Case-level validation and matched example predictions.
 Validation and fixed held-out test Dice/IoU comparisons are complete. Both models
 meet prostate test Dice >= 0.75 under pixel pooling and equal-Case averaging.
-Initial per-Case timing is recorded, but the user confirmed concurrent gaming or
-other GPU work; a run without competing GPU work is pending. Boundary/failure
-analysis and final submission also remain pending.
+Per-Case timing was repeated after the user reported stopping the game; the
+initial contended run is preserved separately. Boundary/failure analysis and
+final submission remain pending.
 
 Student account: **s4906920**. Repository: [course fork](https://github.com/qinyuan666/PatternAnalysis-2026/tree/topic-recognition).
 
@@ -63,7 +63,7 @@ Student account: **s4906920**. Repository: [course fork](https://github.com/qiny
 | Improved U-Net real-data pilot | One epoch completed; pooled prostate Dice 0.7919, equal-Case mean 0.7625 |
 | Improved U-Net formal training | 20 epochs completed; epoch 11 selected; pooled prostate Dice 0.8320, equal-Case mean 0.7934 |
 | Held-out test Dice/IoU | Both frozen models evaluated; prostate pooled Dice 0.8460 / 0.8495, equal-Case mean 0.8416 / 0.8406 (U-Net / Improved) |
-| Per-Case timing | Initial run affected by user-confirmed competing GPU work; preserve records and repeat without competing GPU tasks |
+| Per-Case timing | Repeated after user-reported game closure; original contended measurements retained |
 | Boundary analysis and failure cases | Not completed |
 | Tutor discussion and check-off | Student must attend; not claimed complete |
 
@@ -347,28 +347,30 @@ See [per-class and per-Case report](TEST_RESULTS.md),
 
 ### Per-Case inference time
 
-Both fixed models were timed on the three complete test Cases, with batch 4,
+After the user reported stopping the game, both fixed models were timed again on the three complete test Cases, with batch 4,
 float32, four CPU threads and five warmup forwards before each of three repeats.
 Model order alternated. The following seconds are medians across repeats:
 
 | Test Case | Slices | U-Net image-to-mask | Improved image-to-mask | U-Net forward only | Improved forward only |
 |---|---:|---:|---:|---:|---:|
-| Case 01 | 420 | 5.173 | 6.452 | 1.933 | 3.621 |
-| Case 02 | 60 | 0.698 | 1.004 | 0.250 | 0.542 |
-| Case 03 | 60 | 0.666 | 0.886 | 0.267 | 0.465 |
+| Case 01 | 420 | 1.607 | 1.854 | 0.492 | 0.765 |
+| Case 02 | 60 | 0.209 | 0.255 | 0.057 | 0.104 |
+| Case 03 | 60 | 0.204 | 0.252 | 0.058 | 0.099 |
 
 Image-to-mask timing includes image I/O, preprocessing, transfers, forward, argmax,
 CPU predictions, finite checks and synchronization; it excludes model loading,
 warmup and output export. Ground-truth files are not loaded. Forward-only timing
 sums synchronized model forwards on device-resident batches. All weeks within
 a Case are included, so the 420-slice Case is not a single 60-slice scan.
-Repeated predictions were identical. The user subsequently confirmed concurrent
-gaming or other GPU work during timing. These measurements are retained as a
-contended run, not a fair speed comparison; the earlier speed-advantage inference
-is withdrawn pending a new run without competing GPU work. OS cache and laptop
-power/temperature also remain limitations. Frozen checkpoints and test scores are unchanged.
+Predictions were identical across repeats and matched the initial contended run.
+The current medians are lower for U-Net on all three Cases. The initial measurements
+were affected by user-confirmed gaming or other GPU work and remain historical
+evidence only. Game closure is user-reported; absence of all other GPU work was
+not continuously verified. OS cache and laptop power/temperature remain limitations.
+Frozen checkpoints and test scores are unchanged.
 See [ranges, limitations and reproduction](CASE_BENCHMARK.md) and
-[all timing records](results/test_case_benchmark.json). Four targeted tests passed.
+[current timing records](results/test_case_benchmark_game_closed.json), with
+[initial contended records](results/test_case_benchmark.json) retained. Four targeted tests passed.
 
 The records below retain the preceding pilot and synthetic checks as historical evidence.
 
