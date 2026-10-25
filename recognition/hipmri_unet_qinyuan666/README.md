@@ -13,7 +13,9 @@ real-data capacity/stability pilot and a fresh 20-epoch run. Both formal runs ha
 verified checkpoints, Case-level validation and matched example predictions.
 Validation and fixed held-out test Dice/IoU comparisons are complete. Both models
 meet prostate test Dice >= 0.75 under pixel pooling and equal-Case averaging.
-Per-Case timing is also complete. Boundary/failure analysis and final submission remain pending.
+Initial per-Case timing is recorded, but the user confirmed concurrent gaming or
+other GPU work; a run without competing GPU work is pending. Boundary/failure
+analysis and final submission also remain pending.
 
 Student account: **s4906920**. Repository: [course fork](https://github.com/qinyuan666/PatternAnalysis-2026/tree/topic-recognition).
 
@@ -61,7 +63,7 @@ Student account: **s4906920**. Repository: [course fork](https://github.com/qiny
 | Improved U-Net real-data pilot | One epoch completed; pooled prostate Dice 0.7919, equal-Case mean 0.7625 |
 | Improved U-Net formal training | 20 epochs completed; epoch 11 selected; pooled prostate Dice 0.8320, equal-Case mean 0.7934 |
 | Held-out test Dice/IoU | Both frozen models evaluated; prostate pooled Dice 0.8460 / 0.8495, equal-Case mean 0.8416 / 0.8406 (U-Net / Improved) |
-| Per-Case timing | Three repeats per model/Case complete; image-to-mask and forward-only timing reported |
+| Per-Case timing | Initial run affected by user-confirmed competing GPU work; preserve records and repeat without competing GPU tasks |
 | Boundary analysis and failure cases | Not completed |
 | Tutor discussion and check-off | Student must attend; not claimed complete |
 
@@ -360,8 +362,11 @@ CPU predictions, finite checks and synchronization; it excludes model loading,
 warmup and output export. Ground-truth files are not loaded. Forward-only timing
 sums synchronized model forwards on device-resident batches. All weeks within
 a Case are included, so the 420-slice Case is not a single 60-slice scan.
-Repeated predictions were identical. U-Net was faster in this session, but OS
-cache, laptop power/temperature and other processes were not controlled.
+Repeated predictions were identical. The user subsequently confirmed concurrent
+gaming or other GPU work during timing. These measurements are retained as a
+contended run, not a fair speed comparison; the earlier speed-advantage inference
+is withdrawn pending a new run without competing GPU work. OS cache and laptop
+power/temperature also remain limitations. Frozen checkpoints and test scores are unchanged.
 See [ranges, limitations and reproduction](CASE_BENCHMARK.md) and
 [all timing records](results/test_case_benchmark.json). Four targeted tests passed.
 

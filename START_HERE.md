@@ -1,6 +1,6 @@
 # COMP3710 项目启动清单
 
-选题已确定：HipMRI 2D 分割，标准 2D U-Net 基线，2D Improved U-Net 主模型（Normal），账号 s4906920。数据准备、两模型真实单轮 pilot、各 20 epoch 正式训练及按 Case 验证已完成，权重重载和预测输出已检查。固定测试 Dice/IoU 及整病例测速已完成；边界与失败分析及最终交付尚未完成。
+选题已确定：HipMRI 2D 分割，标准 2D U-Net 基线，2D Improved U-Net 主模型（Normal），账号 s4906920。数据准备、两模型真实单轮 pilot、各 20 epoch 正式训练及按 Case 验证已完成，权重重载和预测输出已检查。固定测试 Dice/IoU 已完成；初次整病例测速受用户确认的其他 GPU 任务干扰，需要复测。边界与失败分析及最终交付尚未完成。
 
 ## 现在从这里开始
 
@@ -11,7 +11,7 @@
 
 当前 Improved U-Net 后台训练及验证均已完成，状态为 `completed`；
 [查看日志与状态](recognition/hipmri_unet_qinyuan666/TRAINING_PLAN.md#当前后台任务)。
-无需重复启动。固定测试评分及 [整病例测速](recognition/hipmri_unet_qinyuan666/CASE_BENCHMARK.md) 已完成，下一步是边界与失败案例分析。
+无需重新训练。固定测试评分已完成；[整病例测速](recognition/hipmri_unet_qinyuan666/CASE_BENCHMARK.md) 需在关闭游戏及其他 GPU 任务后使用新目录复测，另需边界与失败案例分析。
 
 ## 仓库
 
@@ -48,7 +48,7 @@
 - [x] 完成 Improved U-Net 真实六类单轮试跑、资源测量、权重重载与病例评估。
 - [x] 完成 Improved U-Net 20 epoch 正式训练、验证指标核验、同切片预测展示与基线验证比较。
 - [x] 完成固定测试集 Dice/IoU 及病例比较，两种聚合方式下前列腺 Dice 均达到 0.75。
-- [x] 完成整病例测速，分别报告图像到预测流程和纯模型前向的三次测量。
+- [ ] 初次整病例测速已记录，但受其他 GPU 任务干扰；关闭竞争负载后复测。
 - [ ] 完成边界及失败案例分析。
 - [ ] 本人在 practical 与 tutor 讨论，并确认 check-off 已登记。
 
