@@ -13,7 +13,7 @@ real-data capacity/stability pilot and a fresh 20-epoch run. Both formal runs ha
 verified checkpoints, Case-level validation and matched example predictions.
 Validation and fixed held-out test Dice/IoU comparisons are complete. Both models
 meet prostate test Dice >= 0.75 under pixel pooling and equal-Case averaging.
-Per-Case timing, boundary/failure analysis and final submission remain pending.
+Per-Case timing is also complete. Boundary/failure analysis and final submission remain pending.
 
 Student account: **s4906920**. Repository: [course fork](https://github.com/qinyuan666/PatternAnalysis-2026/tree/topic-recognition).
 
@@ -41,6 +41,8 @@ Student account: **s4906920**. Repository: [course fork](https://github.com/qiny
   20 epochs, selected epoch 11, matched baseline comparison and output locations.
 - [Fixed test protocol](TEST_PROTOCOL.md) and [test results (Chinese)](TEST_RESULTS.md):
   540 test slices, three Cases, per-class Dice/IoU and both prostate aggregation methods.
+- [Per-Case inference measurements (Chinese)](CASE_BENCHMARK.md) and
+  [measurement protocol](BENCHMARK_PROTOCOL.md): image-to-mask and forward-only timing.
 
 | Item | Status |
 |---|---|
@@ -59,7 +61,8 @@ Student account: **s4906920**. Repository: [course fork](https://github.com/qiny
 | Improved U-Net real-data pilot | One epoch completed; pooled prostate Dice 0.7919, equal-Case mean 0.7625 |
 | Improved U-Net formal training | 20 epochs completed; epoch 11 selected; pooled prostate Dice 0.8320, equal-Case mean 0.7934 |
 | Held-out test Dice/IoU | Both frozen models evaluated; prostate pooled Dice 0.8460 / 0.8495, equal-Case mean 0.8416 / 0.8406 (U-Net / Improved) |
-| Per-Case timing, boundary analysis and failure cases | Not completed |
+| Per-Case timing | Three repeats per model/Case complete; image-to-mask and forward-only timing reported |
+| Boundary analysis and failure cases | Not completed |
 | Tutor discussion and check-off | Student must attend; not claimed complete |
 
 The task permits preliminary resource evidence for the midpoint. The review below
@@ -340,6 +343,28 @@ See [per-class and per-Case report](TEST_RESULTS.md),
 [U-Net full scores](results/test_unet.json) and
 [Improved U-Net full scores](results/test_improved_unet.json).
 
+### Per-Case inference time
+
+Both fixed models were timed on the three complete test Cases, with batch 4,
+float32, four CPU threads and five warmup forwards before each of three repeats.
+Model order alternated. The following seconds are medians across repeats:
+
+| Test Case | Slices | U-Net image-to-mask | Improved image-to-mask | U-Net forward only | Improved forward only |
+|---|---:|---:|---:|---:|---:|
+| Case 01 | 420 | 5.173 | 6.452 | 1.933 | 3.621 |
+| Case 02 | 60 | 0.698 | 1.004 | 0.250 | 0.542 |
+| Case 03 | 60 | 0.666 | 0.886 | 0.267 | 0.465 |
+
+Image-to-mask timing includes image I/O, preprocessing, transfers, forward, argmax,
+CPU predictions, finite checks and synchronization; it excludes model loading,
+warmup and output export. Ground-truth files are not loaded. Forward-only timing
+sums synchronized model forwards on device-resident batches. All weeks within
+a Case are included, so the 420-slice Case is not a single 60-slice scan.
+Repeated predictions were identical. U-Net was faster in this session, but OS
+cache, laptop power/temperature and other processes were not controlled.
+See [ranges, limitations and reproduction](CASE_BENCHMARK.md) and
+[all timing records](results/test_case_benchmark.json). Four targeted tests passed.
+
 The records below retain the preceding pilot and synthetic checks as historical evidence.
 
 The historical midpoint CPU suite passed **41 tests**; see the archived
@@ -444,8 +469,8 @@ and validation. These are illustration examples, not clinical failure cases:
 ![Synthetic baseline prediction examples](figures/synthetic_predictions_unet.png)
 ![Synthetic improved-model prediction examples](figures/synthetic_predictions_improved_unet.png)
 
-**Current next step:** preserve the completed validation/test comparisons and add
-per-Case inference measurements and boundary/failure analysis.
+**Current next step:** preserve the completed validation/test comparisons and
+per-Case inference measurements, then add boundary/failure analysis.
 See [TRAINING_PLAN.md](TRAINING_PLAN.md) for the completed run and reproduction commands.
 
 The [background runner](run_improved_experiment.py) preserves the fixed configuration,
@@ -572,7 +597,7 @@ includes patient/label checks, artificial NIfTI integration tests for both model
 loss/metric edge cases, finite gradients, checkpoint reloads, manifest integrity,
 measured synthetic runs and a rendered one-page PDF inspection. Codex also assisted
 with both one-epoch pilots, both 20-epoch real-data runs, Case validation, frozen test evaluation, result
-summaries and prediction checks. Training completed with finite-loss/gradient guards;
+summaries, prediction checks and repeated per-Case inference measurements. Training completed with finite-loss/gradient guards;
 the selected checkpoint reloaded exactly and Case aggregates matched pooled metrics.
 
 The student must personally understand and review the code, verify real-data
