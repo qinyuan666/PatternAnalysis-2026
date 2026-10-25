@@ -11,7 +11,9 @@ completed a one-epoch pilot and a fresh 20-epoch U-Net baseline, with Case-level
 validation and prediction checks. Improved U-Net has also completed a one-epoch
 real-data capacity/stability pilot and a fresh 20-epoch run. Both formal runs have
 verified checkpoints, Case-level validation and matched example predictions.
-Validation comparison is available; final test evaluation and failure analysis remain pending.
+Validation and fixed held-out test Dice/IoU comparisons are complete. Both models
+meet prostate test Dice >= 0.75 under pixel pooling and equal-Case averaging.
+Per-Case timing, boundary/failure analysis and final submission remain pending.
 
 Student account: **s4906920**. Repository: [course fork](https://github.com/qinyuan666/PatternAnalysis-2026/tree/topic-recognition).
 
@@ -37,6 +39,8 @@ Student account: **s4906920**. Repository: [course fork](https://github.com/qiny
   Case validation, six-class GPU measurements and matched example slices.
 - [Formal Improved U-Net comparison (Chinese)](FORMAL_IMPROVED_UNET.md): completed
   20 epochs, selected epoch 11, matched baseline comparison and output locations.
+- [Fixed test protocol](TEST_PROTOCOL.md) and [test results (Chinese)](TEST_RESULTS.md):
+  540 test slices, three Cases, per-class Dice/IoU and both prostate aggregation methods.
 
 | Item | Status |
 |---|---|
@@ -54,7 +58,8 @@ Student account: **s4906920**. Repository: [course fork](https://github.com/qiny
 | Formal U-Net baseline | 20 epochs completed; epoch 5 selected by validation loss; pooled prostate Dice 0.8291 |
 | Improved U-Net real-data pilot | One epoch completed; pooled prostate Dice 0.7919, equal-Case mean 0.7625 |
 | Improved U-Net formal training | 20 epochs completed; epoch 11 selected; pooled prostate Dice 0.8320, equal-Case mean 0.7934 |
-| Full model comparison, test scores and failure cases | Not completed |
+| Held-out test Dice/IoU | Both frozen models evaluated; prostate pooled Dice 0.8460 / 0.8495, equal-Case mean 0.8416 / 0.8406 (U-Net / Improved) |
+| Per-Case timing, boundary analysis and failure cases | Not completed |
 | Tutor discussion and check-off | Student must attend; not claimed complete |
 
 The task permits preliminary resource evidence for the midpoint. The review below
@@ -310,6 +315,31 @@ See [formal comparison and limitations](FORMAL_IMPROVED_UNET.md),
 [Case scores](results/formal_improved_unet_cases.json) and
 [training curves](figures/real_improved_unet_20ep_curves.png).
 
+### Held-out test results
+
+The [test protocol](TEST_PROTOCOL.md) was committed as `929bd24` before test scoring.
+The same validation-selected checkpoints (epochs 5 / 11) were evaluated without
+further fitting, threshold tuning or postprocessing. All 540 test slices and three
+Cases were included. Checkpoint hashes remained unchanged; private confusion
+counts reproduce the published summaries exactly.
+
+| Test metric | U-Net | Improved U-Net |
+|---|---:|---:|
+| Prostate pooled Dice | 0.8460 | 0.8495 |
+| Prostate pooled IoU | 0.7331 | 0.7384 |
+| Equal-Case mean prostate Dice | 0.8416 | 0.8406 |
+| Foreground macro Dice | 0.9168 | 0.9210 |
+
+Both aggregation methods exceed 0.75 for both models. All three individual
+prostate Case scores also exceed 0.75. Improved U-Net slightly improves pooled
+overlap, while equal-Case mean prostate Dice is nearly tied and marginally lower.
+Only three test Cases and one seed are available; no statistical superiority,
+boundary improvement or clinical performance is established.
+Test Case aliases refer to different subjects from validation Case aliases.
+See [per-class and per-Case report](TEST_RESULTS.md),
+[U-Net full scores](results/test_unet.json) and
+[Improved U-Net full scores](results/test_improved_unet.json).
+
 The records below retain the preceding pilot and synthetic checks as historical evidence.
 
 The historical midpoint CPU suite passed **41 tests**; see the archived
@@ -338,7 +368,7 @@ examples contain no prostate in either truth or prediction, so their example Dic
 is undefined; the aggregate prostate score above uses the complete validation set.
 No test-set model evaluation was performed.
 
-The validation-only [Case evaluator](evaluate_cases.py) pools confusion counts
+The [Case evaluator](evaluate_cases.py), defaulting to validation, pools confusion counts
 within each manifest Case across all its weeks and slices, then averages defined
 Case scores equally. Both-empty classes are undefined and excluded with counts
 reported; one-empty classes score zero. Five targeted tests cover weighting,
@@ -352,7 +382,9 @@ python evaluate_cases.py --checkpoint runs/real_unet_pilot/best.pt --manifest pr
 Use a new output directory. It contains `summary.json` with anonymous Case aliases
 and `case_details_private.json` with original Case identifiers and confusion counts;
 keep the latter under ignored `runs/`. The checkpoint fixes the label mapping and
-preprocessing, and a changed manifest is rejected. This command offers no test-set mode.
+preprocessing, and a changed manifest is rejected. Explicit `--split test` now supports
+the frozen final evaluation. Seven evaluator tests cover split isolation and unchanged
+checkpoint bytes, alongside nine metric tests and three orchestration regression tests.
 
 For this pilot, all four validation Cases have defined prostate scores. Their
 equal-Case mean Dice is **0.7044** (range **0.6366–0.7938**), compared with pooled
@@ -412,8 +444,8 @@ and validation. These are illustration examples, not clinical failure cases:
 ![Synthetic baseline prediction examples](figures/synthetic_predictions_unet.png)
 ![Synthetic improved-model prediction examples](figures/synthetic_predictions_improved_unet.png)
 
-**Current next step:** preserve the completed validation comparison and prepare
-fixed test evaluation, per-Case inference measurements and boundary/failure analysis.
+**Current next step:** preserve the completed validation/test comparisons and add
+per-Case inference measurements and boundary/failure analysis.
 See [TRAINING_PLAN.md](TRAINING_PLAN.md) for the completed run and reproduction commands.
 
 The [background runner](run_improved_experiment.py) preserves the fixed configuration,
@@ -539,7 +571,7 @@ Architecture choices were checked against the primary papers. Verification
 includes patient/label checks, artificial NIfTI integration tests for both models,
 loss/metric edge cases, finite gradients, checkpoint reloads, manifest integrity,
 measured synthetic runs and a rendered one-page PDF inspection. Codex also assisted
-with both one-epoch pilots, both 20-epoch real-data runs, Case validation, result
+with both one-epoch pilots, both 20-epoch real-data runs, Case validation, frozen test evaluation, result
 summaries and prediction checks. Training completed with finite-loss/gradient guards;
 the selected checkpoint reloaded exactly and Case aggregates matched pooled metrics.
 
@@ -547,8 +579,8 @@ The student must personally understand and review the code, verify real-data
 metadata and results, and accurately maintain this disclosure. Automated tests
 do not replace that responsibility. No copied student/prior-year PR code is used;
 architectural sources are cited below and in model docstrings. Real-data evidence
-is limited to the documented validation experiments; final test evaluation, clinical validity
-and completed tutor check-off are not claimed.
+includes the documented validation and held-out test experiments; clinical validity
+and completion of all final deliverables are not claimed.
 
 ## References
 
